@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/mission-data",
+      "destination": "https://www.planetarydefense.io/mission/mission-data"
+    }
+  ]
+}
