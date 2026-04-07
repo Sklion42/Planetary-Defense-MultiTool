@@ -235,6 +235,137 @@
     max-width: 100%;
   }
 
+
+
+  .wallet-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(3, 6, 10, 0.82);
+    backdrop-filter: blur(8px);
+  }
+  .wallet-modal.is-open { display: flex; }
+  .wallet-modal-dialog {
+    width: min(540px, 100%);
+    background: linear-gradient(180deg, rgba(8, 14, 20, 0.98) 0%, rgba(10, 15, 22, 0.98) 100%);
+    border: 1px solid rgba(34, 211, 255, 0.2);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(60, 168, 231, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  .wallet-modal-dialog::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at top, rgba(34, 211, 255, 0.09), transparent 42%),
+      linear-gradient(180deg, rgba(60, 168, 231, 0.09), transparent 28%);
+  }
+  .wallet-modal-header,
+  .wallet-modal-footer {
+    position: relative;
+    z-index: 1;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(34, 211, 255, 0.12);
+  }
+  .wallet-modal-footer {
+    border-bottom: none;
+    border-top: 1px solid rgba(34, 211, 255, 0.12);
+    display: flex;
+    justify-content: flex-end;
+  }
+  .wallet-modal-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2.4px;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .wallet-modal-subtitle {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text-mid);
+  }
+  .wallet-modal-body {
+    position: relative;
+    z-index: 1;
+    padding: 16px 18px 18px;
+    display: grid;
+    gap: 10px;
+  }
+  .wallet-option {
+    width: 100%;
+    border: 1px solid rgba(34, 211, 255, 0.16);
+    background: linear-gradient(180deg, rgba(14, 22, 30, 0.94) 0%, rgba(8, 13, 18, 0.98) 100%);
+    color: var(--text);
+    padding: 14px 14px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    cursor: pointer;
+    text-align: left;
+    transition: transform .18s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .wallet-option:hover {
+    transform: translateY(-1px);
+    border-color: rgba(60, 168, 231, 0.38);
+    box-shadow: 0 0 20px rgba(34, 211, 255, 0.1);
+    background: linear-gradient(180deg, rgba(16, 27, 36, 0.98) 0%, rgba(8, 13, 18, 1) 100%);
+  }
+  .wallet-option-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(34, 211, 255, 0.14);
+    background: rgba(34, 211, 255, 0.06);
+    font-size: 14px;
+    font-family: 'Orbitron', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .wallet-option-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .wallet-option-desc {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-mid);
+    line-height: 1.35;
+  }
+  .wallet-option-arrow {
+    color: var(--red-bright);
+    font-size: 18px;
+  }
+  .wallet-provider-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 18px;
+    padding: 2px 8px;
+    border: 1px solid rgba(34, 211, 255, 0.14);
+    background: rgba(34, 211, 255, 0.06);
+    color: var(--red-bright);
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
   /* ── LAYOUT ── */
   .layout {
     display: grid;
@@ -2263,7 +2394,7 @@
           <div class="wallet-label">Anchor</div>
           <div class="wallet-account disconnected" id="menuWalletAccount">Not connected</div>
         </div>
-        <button class="btn-load secondary wallet-action" id="menuAnchorActionBtn" onclick="handleAnchorAction()" type="button">Connect</button>
+        <button class="btn-load secondary wallet-action" data-wallet-action="1" id="menuAnchorActionBtn" onclick="handleWalletAction()" type="button">Connect</button>
       </div>
     </div>
   </div>
@@ -2306,7 +2437,7 @@
 <div class="wallet-label">Anchor</div>
 <div class="wallet-account disconnected" id="walletAccount">Not connected</div>
 </div>
-<button class="btn-load secondary wallet-action" id="anchorActionBtn" onclick="handleAnchorAction()" type="button">Connect</button>
+<button class="btn-load secondary wallet-action" data-wallet-action="1" id="anchorActionBtn" onclick="handleWalletAction()" type="button">Connect</button>
 </div>
 </div>
 </div><div class="layout">
@@ -2527,6 +2658,46 @@
 </div>
 </div>
 
+
+<div class="wallet-modal" id="walletModal" aria-hidden="true">
+  <div class="wallet-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="walletModalTitle">
+    <div class="wallet-modal-header">
+      <div class="wallet-modal-title" id="walletModalTitle">Choose your wallet</div>
+      <div class="wallet-modal-subtitle">Pick the cockpit for your next blockchain maneuver. Anchor for desktop firepower, Wombat for speed, WaxCloudWallet for frictionless cloud login.</div>
+    </div>
+    <div class="wallet-modal-body">
+      <button class="wallet-option" type="button" data-wallet-provider="anchor">
+        <span class="wallet-option-icon">A</span>
+        <span>
+          <span class="wallet-option-name">Anchor</span>
+          <span class="wallet-option-desc">Desktop/mobile wallet via Anchor Link. Best choice for signed transactions with a local session.</span>
+        </span>
+        <span class="wallet-option-arrow">›</span>
+      </button>
+      <button class="wallet-option" type="button" data-wallet-provider="wombat">
+        <span class="wallet-option-icon">W</span>
+        <span>
+          <span class="wallet-option-name">Wombat</span>
+          <span class="wallet-option-desc">Uses the Wombat provider when available in the browser or in the in-app dApp browser.</span>
+        </span>
+        <span class="wallet-option-arrow">›</span>
+      </button>
+      <button class="wallet-option" type="button" data-wallet-provider="waxcloudwallet">
+        <span class="wallet-option-icon">WCW</span>
+        <span>
+          <span class="wallet-option-name">WaxCloudWallet</span>
+          <span class="wallet-option-desc">Uses WaxJS and My Cloud Wallet. Keeps the dApp flow smooth when auto-login is available.</span>
+        </span>
+        <span class="wallet-option-arrow">›</span>
+      </button>
+    </div>
+    <div class="wallet-modal-footer">
+      <button class="btn-load secondary" id="walletModalCloseBtn" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="./waxjs.js"></script>
 <script>
 window.__anchorLinkLoadError = false;
 window.__anchorTransportLoadError = false;
@@ -2546,51 +2717,101 @@ const MOBILE_MENU_BREAKPOINT = 710;
 const WAX_RPC_URL = 'https://wax.greymass.com';
 const WAX_CHAIN_ID = '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4';
 const ANCHOR_SESSION_ID = 'planetary-defense-inventory';
+const WALLET_PROVIDER_STORAGE_KEY = 'pd.wallet.provider';
+const WALLET_ACCOUNT_STORAGE_KEY = 'pd.wallet.account';
 let collectionMeta = null;
 const marketPriceCache = new Map();
 let activeDetailsRequest = 0;
 let anchorLink = null;
 let anchorSession = null;
 let connectedWallet = '';
+let activeWalletProvider = '';
+const walletClients = {
+  waxcloudwallet: null,
+  wombat: null
+};
 
 function getActiveWallet() {
   return connectedWallet.trim();
 }
 
+function getWalletProviderName(provider = activeWalletProvider) {
+  switch (provider) {
+    case 'anchor': return 'Anchor';
+    case 'wombat': return 'Wombat';
+    case 'waxcloudwallet': return 'WaxCloudWallet';
+    default: return 'Wallet';
+  }
+}
+
+function persistWalletState() {
+  if (activeWalletProvider && getActiveWallet()) {
+    localStorage.setItem(WALLET_PROVIDER_STORAGE_KEY, activeWalletProvider);
+    localStorage.setItem(WALLET_ACCOUNT_STORAGE_KEY, getActiveWallet());
+    return;
+  }
+  localStorage.removeItem(WALLET_PROVIDER_STORAGE_KEY);
+  localStorage.removeItem(WALLET_ACCOUNT_STORAGE_KEY);
+}
+
+function setWalletConnection(provider, wallet) {
+  activeWalletProvider = provider || '';
+  connectedWallet = String(wallet || '').trim();
+  persistWalletState();
+  updateWalletUi();
+}
+
+function clearWalletConnection() {
+  activeWalletProvider = '';
+  connectedWallet = '';
+  persistWalletState();
+  updateWalletUi();
+}
+
 function updateWalletUi() {
   const wallet = getActiveWallet();
   const isConnected = !!wallet;
+  const providerName = getWalletProviderName();
+  const accountMarkup = isConnected
+    ? `<span class="wallet-provider-badge">${providerName}</span><span>${wallet}</span>`
+    : 'Not connected';
 
   [
     {
       indicator: document.getElementById('walletIndicator'),
       account: document.getElementById('walletAccount'),
       actionBtn: document.getElementById('anchorActionBtn'),
-      walletStatus: document.getElementById('walletStatus')
+      walletStatus: document.getElementById('walletStatus'),
+      label: document.querySelector('#walletStatus .wallet-label')
     },
     {
       indicator: document.getElementById('menuWalletIndicator'),
       account: document.getElementById('menuWalletAccount'),
       actionBtn: document.getElementById('menuAnchorActionBtn'),
-      walletStatus: document.getElementById('menuWalletStatus')
+      walletStatus: document.getElementById('menuWalletStatus'),
+      label: document.querySelector('#menuWalletStatus .wallet-label')
     }
   ].forEach(ui => {
-    const { indicator, account, actionBtn, walletStatus } = ui;
+    const { indicator, account, actionBtn, walletStatus, label } = ui;
     if (!account || !actionBtn || !walletStatus) return;
 
     if (indicator) indicator.classList.toggle('connected', isConnected);
-    account.textContent = isConnected ? wallet : 'Not connected';
+    account.innerHTML = accountMarkup;
     account.classList.toggle('disconnected', !isConnected);
     walletStatus.classList.toggle('is-connected', isConnected);
-    actionBtn.textContent = isConnected ? 'Disconnect' : 'Connect';
+    if (label) label.textContent = isConnected ? providerName : 'Wallet';
+    actionBtn.textContent = isConnected ? `Disconnect ${providerName}` : 'Connect wallet';
     actionBtn.classList.toggle('secondary', isConnected);
     actionBtn.classList.toggle('is-connect', !isConnected);
     actionBtn.classList.toggle('is-disconnect', isConnected);
-    actionBtn.setAttribute('aria-label', isConnected ? 'Disconnect Anchor wallet' : 'Connect Anchor wallet');
+    actionBtn.setAttribute('aria-label', isConnected ? `Disconnect ${providerName}` : 'Choose a wallet to connect');
   });
+
+  const mercPayBtn = document.getElementById('mercPayBtn');
+  if (mercPayBtn) mercPayBtn.disabled = !isConnected || !mercGetValidEntries().length;
 }
 
-function resetInventoryState(message = 'Connect your Anchor wallet above') {
+function resetInventoryState(message = 'Connect a wallet above') {
   allAssets = [];
   filteredAssets = [];
   renderedAssets = [];
@@ -2599,6 +2820,29 @@ function resetInventoryState(message = 'Connect your Anchor wallet above') {
   buildSchemaFilters([]);
   setItemList(`<div class="status-msg">${message}</div>`);
   resetDetails();
+}
+
+function getWaxJsCtor() {
+  return window.waxjs?.WaxJS || window.WaxJS || window.waxjs?.default?.WaxJS || null;
+}
+
+function ensureWaxJsAvailable() {
+  const WaxJS = getWaxJsCtor();
+  if (!WaxJS) {
+    throw new Error('waxjs.js is not available on this page.');
+  }
+  return WaxJS;
+}
+
+function buildWaxClient(provider) {
+  const WaxJS = ensureWaxJsAvailable();
+  if (!walletClients[provider]) {
+    walletClients[provider] = new WaxJS({
+      rpcEndpoint: WAX_RPC_URL,
+      tryAutoLogin: false
+    });
+  }
+  return walletClients[provider];
 }
 
 async function ensureAnchorLink() {
@@ -2621,78 +2865,219 @@ async function ensureAnchorLink() {
   return anchorLink;
 }
 
-async function restoreAnchorSession() {
-  try {
-    const link = await ensureAnchorLink();
-    const session = await link.restoreSession(ANCHOR_SESSION_ID);
-    if (!session) {
-      updateWalletUi();
-      return;
-    }
+function getWalletModal() {
+  return document.getElementById('walletModal');
+}
 
-    anchorSession = session;
-    connectedWallet = String(session.auth?.actor || '');
-    updateWalletUi();
-    await loadInventory();
-  } catch (e) {
-    console.warn('Anchor session restore failed', e);
-    anchorSession = null;
-    connectedWallet = '';
-    updateWalletUi();
-  }
+function closeWalletModal() {
+  const modal = getWalletModal();
+  if (!modal) return;
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+function openWalletModal() {
+  const modal = getWalletModal();
+  if (!modal) return;
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden', 'false');
 }
 
 async function connectAnchor() {
-  const actionBtn = document.getElementById('anchorActionBtn');
-  actionBtn.disabled = true;
-  actionBtn.textContent = 'Connecting...';
-  actionBtn.classList.remove('is-connect', 'is-disconnect');
-
-  try {
-    const link = await ensureAnchorLink();
-    const identity = await link.login(ANCHOR_SESSION_ID);
-    const session = identity?.session;
-    const actor = String(session?.auth?.actor || '');
-    if (!session || !actor) throw new Error('Anchor did not return a signed session.');
-
-    anchorSession = session;
-    connectedWallet = actor;
-    updateWalletUi();
-    await loadInventory();
-  } catch (e) {
-    const message = e?.message || String(e);
-    alert(`Anchor connection failed: ${message}`);
-    anchorSession = null;
-    connectedWallet = '';
-    updateWalletUi();
-  } finally {
-    actionBtn.disabled = false;
-    if (!getActiveWallet()) actionBtn.textContent = 'Connect';
-    updateWalletUi();
-  }
+  const link = await ensureAnchorLink();
+  const identity = await link.login(ANCHOR_SESSION_ID);
+  const session = identity?.session;
+  const actor = String(session?.auth?.actor || '');
+  if (!session || !actor) throw new Error('Anchor did not return a signed session.');
+  anchorSession = session;
+  setWalletConnection('anchor', actor);
+  return actor;
 }
 
-function handleAnchorAction() {
-  if (getActiveWallet()) {
-    disconnectAnchor();
-    return;
-  }
-  connectAnchor();
+async function restoreAnchorSession() {
+  const link = await ensureAnchorLink();
+  const session = await link.restoreSession(ANCHOR_SESSION_ID);
+  if (!session) return false;
+  const actor = String(session.auth?.actor || '');
+  if (!actor) return false;
+  anchorSession = session;
+  setWalletConnection('anchor', actor);
+  return true;
 }
 
-async function disconnectAnchor() {
+function extractWombatAccount(loginResult) {
+  if (!loginResult) return '';
+  if (typeof loginResult === 'string') return loginResult;
+  return String(
+    loginResult.account ||
+    loginResult.userAccount ||
+    loginResult.name ||
+    loginResult.accountName ||
+    loginResult.wallet ||
+    ''
+  ).trim();
+}
+
+async function connectWaxCloudWallet() {
+  const client = buildWaxClient('waxcloudwallet');
+  const actor = String(await client.login()).trim();
+  if (!actor) throw new Error('WaxCloudWallet did not return an account.');
+  setWalletConnection('waxcloudwallet', actor);
+  return actor;
+}
+
+async function restoreWaxCloudWallet() {
+  const client = buildWaxClient('waxcloudwallet');
+  const available = await client.isAutoLoginAvailable();
+  if (!available || !client.userAccount) return false;
+  setWalletConnection('waxcloudwallet', client.userAccount);
+  return true;
+}
+
+async function connectWombat() {
+  if (window.wombat) {
+    const api = window.wombat;
+    let loginResult = null;
+    if (typeof api.login === 'function') loginResult = await api.login();
+    let actor = extractWombatAccount(loginResult);
+    if (!actor && typeof api.getAccount === 'function') actor = String(await api.getAccount()).trim();
+    if (!actor && typeof api.userAccount === 'string') actor = api.userAccount.trim();
+    if (!actor) throw new Error('Wombat did not expose an account. Open the page inside Wombat or install the Wombat extension.');
+    walletClients.wombat = { raw: api, mode: 'injected' };
+    setWalletConnection('wombat', actor);
+    return actor;
+  }
+
+  throw new Error('Wombat provider not found in this browser.');
+}
+
+async function restoreWombatSession() {
+  if (!window.wombat) return false;
+  let actor = '';
+  if (typeof window.wombat.getAccount === 'function') {
+    try {
+      actor = String(await window.wombat.getAccount()).trim();
+    } catch (error) {
+      console.warn('Wombat restore skipped', error);
+    }
+  }
+  if (!actor && typeof window.wombat.userAccount === 'string') actor = window.wombat.userAccount.trim();
+  if (!actor) return false;
+  walletClients.wombat = { raw: window.wombat, mode: 'injected' };
+  setWalletConnection('wombat', actor);
+  return true;
+}
+
+async function restoreWalletSession() {
+  const preferredProvider = localStorage.getItem(WALLET_PROVIDER_STORAGE_KEY) || '';
+  const restoreOrder = preferredProvider
+    ? [preferredProvider, 'anchor', 'wombat', 'waxcloudwallet'].filter((provider, index, list) => list.indexOf(provider) === index)
+    : ['anchor', 'wombat', 'waxcloudwallet'];
+
+  for (const provider of restoreOrder) {
+    try {
+      if (provider === 'anchor' && await restoreAnchorSession()) {
+        await loadInventory();
+        return;
+      }
+      if (provider === 'wombat' && await restoreWombatSession()) {
+        await loadInventory();
+        return;
+      }
+      if (provider === 'waxcloudwallet' && await restoreWaxCloudWallet()) {
+        await loadInventory();
+        return;
+      }
+    } catch (error) {
+      console.warn(`Wallet restore failed for ${provider}`, error);
+    }
+  }
+
+  clearWalletConnection();
+}
+
+async function disconnectWallet() {
   try {
-    if (anchorSession?.remove) {
+    if (activeWalletProvider === 'anchor' && anchorSession?.remove) {
       await anchorSession.remove();
     }
-  } catch (e) {
-    console.warn('Unable to clear Anchor session', e);
+    if (activeWalletProvider === 'wombat' && walletClients.wombat?.raw?.logout) {
+      await walletClients.wombat.raw.logout();
+    }
+    if (activeWalletProvider === 'waxcloudwallet' && walletClients.waxcloudwallet?.logout) {
+      await walletClients.waxcloudwallet.logout();
+    }
+  } catch (error) {
+    console.warn('Wallet disconnect cleanup failed', error);
   }
 
   anchorSession = null;
-  connectedWallet = '';
-  updateWalletUi();
+  clearWalletConnection();
   resetInventoryState();
+}
+
+async function connectSelectedWallet(provider) {
+  if (!provider) return;
+  const actionButtons = Array.from(document.querySelectorAll('[data-wallet-action="1"]'));
+  actionButtons.forEach(btn => {
+    btn.disabled = true;
+    btn.textContent = `Connecting ${getWalletProviderName(provider)}...`;
+  });
+
+  try {
+    if (provider === 'anchor') await connectAnchor();
+    else if (provider === 'wombat') await connectWombat();
+    else if (provider === 'waxcloudwallet') await connectWaxCloudWallet();
+    else throw new Error(`Unsupported wallet provider: ${provider}`);
+
+    closeWalletModal();
+    await loadInventory();
+  } catch (error) {
+    await disconnectWallet();
+    const detail = error?.message || String(error);
+    alert(`${getWalletProviderName(provider)} connection failed: ${detail}`);
+  } finally {
+    actionButtons.forEach(btn => { btn.disabled = false; });
+    updateWalletUi();
+  }
+}
+
+function handleWalletAction() {
+  if (getActiveWallet()) {
+    disconnectWallet();
+    return;
+  }
+  openWalletModal();
+}
+
+async function transactWithActiveWallet(transaction, options = {}) {
+  if (activeWalletProvider === 'anchor') {
+    if (!anchorSession) throw new Error('Anchor session not found.');
+    return anchorSession.transact(transaction, options);
+  }
+
+  if (activeWalletProvider === 'waxcloudwallet') {
+    const client = buildWaxClient('waxcloudwallet');
+    if (!client?.api?.transact) throw new Error('WaxCloudWallet transaction API is unavailable.');
+    return client.api.transact(transaction, {
+      blocksBehind: 3,
+      expireSeconds: 120,
+      ...options
+    });
+  }
+
+  if (activeWalletProvider === 'wombat') {
+    const wombat = walletClients.wombat?.raw || window.wombat;
+    if (wombat?.signTransaction) {
+      return wombat.signTransaction(transaction, options);
+    }
+    if (wombat?.transact) {
+      return wombat.transact(transaction, options);
+    }
+    throw new Error('Wombat transaction API is unavailable in this browser.');
+  }
+
+  throw new Error('No wallet connected.');
 }
 
 async function fetchWithFallback(path) {
@@ -3049,7 +3434,7 @@ async function loadInventory() {
   const wallet = getActiveWallet();
   if (!wallet) {
     resetInventoryState();
-    alert('Connect your Anchor wallet first.');
+    alert('Connect a wallet first.');
     return;
   }
 
@@ -3518,12 +3903,23 @@ document.querySelectorAll('#mobileBottomDock .mobile-dock-btn').forEach(btn => {
 });
 window.addEventListener('resize', syncMobileInventoryState);
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') setMobileInventoryOpen(false);
+  if (e.key === 'Escape') { setMobileInventoryOpen(false); closeWalletModal(); }
 });
 loadCollectionMeta();
+const walletModal = getWalletModal();
+if (walletModal) {
+  walletModal.addEventListener('click', event => {
+    if (event.target === walletModal) closeWalletModal();
+  });
+  walletModal.querySelectorAll('[data-wallet-provider]').forEach(btn => {
+    btn.addEventListener('click', () => connectSelectedWallet(btn.dataset.walletProvider));
+  });
+}
+const walletModalCloseBtn = document.getElementById('walletModalCloseBtn');
+if (walletModalCloseBtn) walletModalCloseBtn.addEventListener('click', closeWalletModal);
 syncMobileInventoryState();
 updateWalletUi();
-restoreAnchorSession();
+restoreWalletSession();
 </script>
 
 <script>
@@ -4253,7 +4649,7 @@ restoreAnchorSession();
   async function mercLoadSupporters() {
     const wallet = getActiveWallet();
     if (!wallet) {
-      mercToast('Connect your Anchor wallet first.');
+      mercToast('Connect a wallet first.');
       return;
     }
     const btn = document.getElementById('mercLoadSupportersBtn');
@@ -4303,8 +4699,8 @@ restoreAnchorSession();
 
   async function mercPayAll() {
     const wallet = getActiveWallet();
-    if (!wallet || !anchorSession) {
-      mercToast('Anchor connection required.');
+    if (!wallet || !activeWalletProvider) {
+      mercToast('Connect a wallet before sending payments.');
       return;
     }
     const entries = mercGetValidEntries();
@@ -4334,10 +4730,10 @@ restoreAnchorSession();
       }
     }));
 
-    mercLog(`Sending ${entries.length} payment(s) in a single Anchor transaction…`, 'pending');
+    mercLog(`Sending ${entries.length} payment(s) with ${getWalletProviderName()}…`, 'pending');
 
     try {
-      const result = await anchorSession.transact({ actions });
+      const result = await transactWithActiveWallet({ actions });
       const txid = result?.transaction_id || result?.processed?.id || result?.response?.transaction_id || '?';
       if (progress) progress.style.width = '100%';
       mercLog(`Transaction confirmed · ${String(txid).slice(0, 24)}…`, 'ok');
