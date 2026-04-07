@@ -3784,7 +3784,7 @@ restoreAnchorSession();
     return Array.isArray(rows) && rows.length ? rows[0] : `0.0000 ${TLM_SYMBOL}`;
   }
 
-  const MERC_MISSION_DATA_URL = 'https://corsproxy.io/?https://www.planetarydefense.io/mission/mission-data';
+  const MERC_MISSION_DATA_URL = '/api/mission-data';
 
   function mercFormatNumberUS(value, { decimals = 0 } = {}) {
     const num = Number(value);
