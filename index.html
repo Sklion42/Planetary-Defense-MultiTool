@@ -2773,7 +2773,7 @@ function updateWalletUi() {
   const isConnected = !!wallet;
   const providerName = getWalletProviderName();
   const accountMarkup = isConnected
-    ? `<span class="wallet-provider-badge">${providerName}</span><span>${wallet}</span>`
+    ? `<span>${wallet}</span>`
     : 'Not connected';
 
   [
@@ -2800,11 +2800,11 @@ function updateWalletUi() {
     account.classList.toggle('disconnected', !isConnected);
     walletStatus.classList.toggle('is-connected', isConnected);
     if (label) label.textContent = isConnected ? providerName : 'Wallet';
-    actionBtn.textContent = isConnected ? `Disconnect ${providerName}` : 'Connect wallet';
+    actionBtn.textContent = isConnected ? 'Disconnect' : 'Connect';
     actionBtn.classList.toggle('secondary', isConnected);
     actionBtn.classList.toggle('is-connect', !isConnected);
     actionBtn.classList.toggle('is-disconnect', isConnected);
-    actionBtn.setAttribute('aria-label', isConnected ? `Disconnect ${providerName}` : 'Choose a wallet to connect');
+    actionBtn.setAttribute('aria-label', isConnected ? 'Disconnect' : 'Connect');
   });
 
   const mercPayBtn = document.getElementById('mercPayBtn');
