@@ -321,31 +321,44 @@
     background: linear-gradient(180deg, rgba(16, 27, 36, 0.98) 0%, rgba(8, 13, 18, 1) 100%);
   }
   .wallet-option-icon {
-    width: 36px;
-    height: 36px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    overflow: hidden;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(34, 211, 255, 0.14);
-    background: rgba(34, 211, 255, 0.06);
-    font-size: 14px;
-    font-family: 'Orbitron', monospace;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+
+    border: 1px solid rgba(34, 211, 255, 0.2);
+    background: radial-gradient(circle at 30% 30%, rgba(34, 211, 255, 0.15), rgba(0,0,0,0.6));
+    box-shadow: 0 0 10px rgba(34, 211, 255, 0.1);
+
+    flex-shrink: 0;
+}
+  .wallet-option-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(1.1);
+  
+}
+  .wallet-option-copy {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    min-height: 40px;
   }
   .wallet-option-name {
     font-family: 'Orbitron', monospace;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 1.8px;
     text-transform: uppercase;
     color: var(--text);
-  }
-  .wallet-option-desc {
-    margin-top: 4px;
-    font-size: 11px;
-    color: var(--text-mid);
-    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .wallet-option-arrow {
     color: var(--red-bright);
@@ -2667,26 +2680,29 @@
     </div>
     <div class="wallet-modal-body">
       <button class="wallet-option" type="button" data-wallet-provider="anchor">
-        <span class="wallet-option-icon">A</span>
-        <span>
+        <div class="wallet-option-icon">
+          <img src="img/wallet/anchor.png" alt="Anchor">
+        </div>
+        <span class="wallet-option-copy">
           <span class="wallet-option-name">Anchor</span>
-          <span class="wallet-option-desc">Desktop/mobile wallet via Anchor Link. Best choice for signed transactions with a local session.</span>
         </span>
         <span class="wallet-option-arrow">›</span>
       </button>
       <button class="wallet-option" type="button" data-wallet-provider="wombat">
-        <span class="wallet-option-icon">W</span>
-        <span>
+        <div class="wallet-option-icon">
+          <img src="img/wallet/wombat.png" alt="Wombat">
+        </div>
+        <span class="wallet-option-copy">
           <span class="wallet-option-name">Wombat</span>
-          <span class="wallet-option-desc">Uses the Wombat provider when available in the browser or in the in-app dApp browser.</span>
         </span>
         <span class="wallet-option-arrow">›</span>
       </button>
       <button class="wallet-option" type="button" data-wallet-provider="waxcloudwallet">
-        <span class="wallet-option-icon">WCW</span>
-        <span>
-          <span class="wallet-option-name">WaxCloudWallet</span>
-          <span class="wallet-option-desc">Uses WaxJS and My Cloud Wallet. Keeps the dApp flow smooth when auto-login is available.</span>
+        <div class="wallet-option-icon">
+          <img src="img/wallet/wcw.png" alt="MyCloudWallet">
+        </div>
+        <span class="wallet-option-copy">
+          <span class="wallet-option-name">MyCloudWallet</span>
         </span>
         <span class="wallet-option-arrow">›</span>
       </button>
