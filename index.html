@@ -379,7 +379,7 @@
   /* ── LAYOUT ── */
   .layout {
     display: grid;
-    grid-template-columns: 300px 1fr 280px;
+    grid-template-columns: 300px 1fr 420px;
     grid-template-areas: "inventory preview details";
     gap: 8px;
     flex: 1;       /* prend toute la hauteur restante */
@@ -438,9 +438,11 @@
   }
 
   /* ── LEFT ── */
-  .inv-categories { flex-shrink: 0; border-bottom: 1px solid var(--border); }
+  .inv-categories { flex: 0 0 auto; border-bottom: 1px solid var(--border); overflow: hidden; }
   .inventory-panel .inv-categories,
   .inventory-panel .item-list { min-height: 0; }
+  .inventory-panel .inv-categories { flex: 0 0 calc(25% - 4px); overflow-y: auto; }
+  .inventory-panel .item-list { flex: 1; }
   .cat-item {
     display: flex; align-items: center; gap: 8px;
     padding: 6px 16px; cursor: pointer;
@@ -469,6 +471,9 @@
   .item-list::-webkit-scrollbar { width: 4px; }
   .item-list::-webkit-scrollbar-track { background: transparent; }
   .item-list::-webkit-scrollbar-thumb { background: var(--red-dim); }
+  .inv-categories::-webkit-scrollbar { width: 4px; }
+  .inv-categories::-webkit-scrollbar-track { background: transparent; }
+  .inv-categories::-webkit-scrollbar-thumb { background: var(--red-dim); }
   .item-type-group + .item-type-group {
     border-top: 1px solid rgba(26, 41, 42, 0.65);
   }
@@ -589,7 +594,7 @@
 
   /* ── CENTER ── */
   .center-panel {
-    background: radial-gradient(ellipse 80% 80% at 50% 50%, rgb(5, 16, 20) 0%, var(--panel) 100%);
+    background: var(--panel);
   }
   #cardArea {
     flex: 1; min-height: 0;
@@ -1691,6 +1696,17 @@
     color: var(--red-bright);
     opacity: 0.75;
   }
+  .menu-button-byline {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--red-bright);
+    opacity: 0.75;
+  }
   .menu-button.placeholder[disabled] {
     cursor: default;
     opacity: 0.9;
@@ -1769,6 +1785,11 @@
       background: linear-gradient(180deg, rgba(14, 22, 29, 0.92), rgba(8, 12, 17, 0.98));
     }
     .menu-button.placeholder::after {
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+    }
+    .menu-button-byline {
       top: 50%;
       right: 12px;
       transform: translateY(-50%);
@@ -2418,6 +2439,7 @@
         <button class="menu-button" type="button" onclick="openInventoryPage()">Inventory</button>
         <button class="menu-button placeholder" type="button" disabled>Smart Market</button>
         <button class="menu-button" type="button" onclick="openMercPage()">Manage mercenaries</button>
+        <a class="menu-button" href="https://naroncodex.app/" target="_blank" rel="noopener">Naron Codex<span class="menu-button-byline">by Shade</span></a>
       </div>
     </div>
   </div>
@@ -2485,6 +2507,22 @@
 <option value="all">All</option>
 <option value="owned">Owned only</option>
 <option value="missing">Not owned only</option>
+</select>
+</div>
+<div class="sort-group">
+<label for="starFilterMode">Stars</label>
+<select id="starFilterMode" onchange="applySort()">
+<option value="exact">Exactly</option>
+<option value="minimum">At least</option>
+</select>
+<select id="starFilterValue" onchange="applySort()">
+<option value="all">All ⭐</option>
+<option value="0">0 stars</option>
+<option value="1">1 star</option>
+<option value="2">2 stars</option>
+<option value="3">3 stars</option>
+<option value="4">4 stars</option>
+<option value="5">5 stars</option>
 </select>
 </div>
 </div>
@@ -2830,6 +2868,10 @@ function resetInventoryState(message = 'Connect a wallet above') {
   renderedAssets = [];
   schemaCounts = {};
   collapsedTypeGroups = {};
+  ownershipFilter = 'all';
+  starFilterMode = 'exact';
+  starFilterValue = 'all';
+  resetFilterControls();
   buildSchemaFilters([]);
   setItemList(`<div class="status-msg">${message}</div>`);
   resetDetails();
@@ -2908,13 +2950,22 @@ async function connectAnchor() {
 }
 
 async function restoreAnchorSession() {
-  const link = await ensureAnchorLink();
-  const session = await link.restoreSession(ANCHOR_SESSION_ID);
-  if (!session) return false;
-  const actor = String(session.auth?.actor || '');
-  if (!actor) return false;
-  anchorSession = session;
-  return true;
+  try {
+    const link = await ensureAnchorLink();
+    const session = await link.restoreSession(ANCHOR_SESSION_ID);
+    if (!session) {
+      updateWalletUi();
+      return;
+    }
+    anchorSession = session;
+    setWalletConnection('anchor', String(session.auth?.actor || ''));
+    updateWalletUi();
+    await loadInventory();
+  } catch (e) {
+    console.warn('Anchor session restore failed:', e);
+    resetInventoryState();
+    updateWalletUi();
+  }
 }
 
 function extractWombatAccount(loginResult) {
@@ -2939,11 +2990,26 @@ async function connectWaxCloudWallet() {
 }
 
 async function restoreWaxCloudWallet() {
-  const client = buildWaxClient('waxcloudwallet');
-  const available = await client.isAutoLoginAvailable();
-  if (!available || !client.userAccount) return false;
-  // Client is already built
-  return true;
+  try {
+    const client = buildWaxClient('waxcloudwallet');
+    const available = await client.isAutoLoginAvailable();
+    if (!available || !client.userAccount) {
+      updateWalletUi();
+      return;
+    }
+    const actor = String(client.userAccount).trim();
+    if (!actor) {
+      updateWalletUi();
+      return;
+    }
+    setWalletConnection('waxcloudwallet', actor);
+    updateWalletUi();
+    await loadInventory();
+  } catch (error) {
+    console.warn('WaxCloudWallet session restore failed', error);
+    resetInventoryState();
+    updateWalletUi();
+  }
 }
 
 async function connectWombat() {
@@ -2964,45 +3030,68 @@ async function connectWombat() {
 }
 
 async function restoreWombatSession() {
-  if (!window.wombat) return false;
-  let actor = '';
-  if (typeof window.wombat.getAccount === 'function') {
-    try {
+  if (!window.wombat) return;
+  try {
+    let actor = '';
+    if (typeof window.wombat.getAccount === 'function') {
       actor = String(await window.wombat.getAccount()).trim();
-    } catch (error) {
-      console.warn('Wombat restore skipped', error);
     }
+    if (!actor && typeof window.wombat.userAccount === 'string') {
+      actor = window.wombat.userAccount.trim();
+    }
+    if (!actor) {
+      updateWalletUi();
+      return;
+    }
+    walletClients.wombat = { raw: window.wombat, mode: 'injected' };
+    setWalletConnection('wombat', actor);
+    updateWalletUi();
+    await loadInventory();
+  } catch (error) {
+    console.warn('Wombat session restore failed', error);
+    resetInventoryState();
+    updateWalletUi();
   }
-  if (!actor && typeof window.wombat.userAccount === 'string') actor = window.wombat.userAccount.trim();
-  if (!actor) return false;
-  walletClients.wombat = { raw: window.wombat, mode: 'injected' };
-  return true;
 }
 
 async function restoreWalletSession() {
   const preferredProvider = localStorage.getItem(WALLET_PROVIDER_STORAGE_KEY) || '';
-  const storedAccount = localStorage.getItem(WALLET_ACCOUNT_STORAGE_KEY) || '';
   
-  if (!preferredProvider || !storedAccount) {
-    clearWalletConnection();
-    return false;
+  // Try to restore preferred provider first
+  if (preferredProvider) {
+    try {
+      if (preferredProvider === 'anchor') {
+        await restoreAnchorSession();
+        return;
+      }
+      if (preferredProvider === 'wombat') {
+        await restoreWombatSession();
+        return;
+      }
+      if (preferredProvider === 'waxcloudwallet') {
+        await restoreWaxCloudWallet();
+        return;
+      }
+    } catch (error) {
+      console.warn(`Preferred wallet restore failed for ${preferredProvider}`, error);
+    }
   }
 
-  const restoreOrder = [preferredProvider, 'anchor', 'wombat', 'waxcloudwallet'].filter((provider, index, list) => list.indexOf(provider) === index);
-
+  // Try other providers in order as fallback
+  const restoreOrder = ['anchor', 'wombat', 'waxcloudwallet'].filter(p => p !== preferredProvider);
   for (const provider of restoreOrder) {
     try {
-      if (provider === 'anchor' && await restoreAnchorSession()) {
-        setWalletConnection('anchor', storedAccount);
-        return true;
+      if (provider === 'anchor') {
+        await restoreAnchorSession();
+        if (getActiveWallet()) return;
       }
-      if (provider === 'wombat' && await restoreWombatSession()) {
-        setWalletConnection('wombat', storedAccount);
-        return true;
+      if (provider === 'wombat') {
+        await restoreWombatSession();
+        if (getActiveWallet()) return;
       }
-      if (provider === 'waxcloudwallet' && await restoreWaxCloudWallet()) {
-        setWalletConnection('waxcloudwallet', storedAccount);
-        return true;
+      if (provider === 'waxcloudwallet') {
+        await restoreWaxCloudWallet();
+        if (getActiveWallet()) return;
       }
     } catch (error) {
       console.warn(`Wallet restore failed for ${provider}`, error);
@@ -3010,7 +3099,7 @@ async function restoreWalletSession() {
   }
 
   clearWalletConnection();
-  return false;
+  updateWalletUi();
 }
 
 async function disconnectWallet() {
@@ -3369,6 +3458,8 @@ async function loadCollectionMeta() {
 
 let allAssets = [], filteredAssets = [], renderedAssets = [], currentSchema = 'all', selectedAsset = null, schemaCounts = {}, collapsedTypeGroups = {};
 let ownershipFilter = 'all';
+let starFilterMode = 'exact';
+let starFilterValue = 'all';
 let ownedAssets = [], collectionTemplates = [];
 
 function getAssetKey(asset) {
@@ -3564,13 +3655,42 @@ function compareAssets(a, b, sort, direction='asc') {
   }
   return 0;
 }
+function resetFilterControls() {
+  const ownershipFilterEl = document.getElementById('ownershipFilter');
+  const starFilterModeEl = document.getElementById('starFilterMode');
+  const starFilterValueEl = document.getElementById('starFilterValue');
+  if (ownershipFilterEl) ownershipFilterEl.value = 'all';
+  if (starFilterModeEl) starFilterModeEl.value = 'exact';
+  if (starFilterValueEl) starFilterValueEl.value = 'all';
+}
 function applySort() {
   const sort = document.getElementById('sortSelect').value;
   const direction = document.getElementById('sortDirection').value;
   ownershipFilter = document.getElementById('ownershipFilter')?.value || 'all';
+  starFilterMode = document.getElementById('starFilterMode')?.value || 'exact';
+  starFilterValue = document.getElementById('starFilterValue')?.value || 'all';
+  
   const arr = filteredAssets.filter(asset => {
-    if (ownershipFilter === 'owned') return !asset.isMissing;
-    if (ownershipFilter === 'missing') return !!asset.isMissing;
+    // Ownership filter
+    if (ownershipFilter === 'owned') {
+      if (asset.isMissing) return false;
+    } else if (ownershipFilter === 'missing') {
+      if (!asset.isMissing) return false;
+    }
+    
+    // Star filter
+    if (starFilterValue !== 'all') {
+      const data = {...asset.template?.immutable_data, ...asset.data};
+      const { count: assetStars } = getStarInfo(data);
+      const filterStarCount = Number(starFilterValue);
+      
+      if (starFilterMode === 'exact') {
+        if (assetStars !== filterStarCount) return false;
+      } else if (starFilterMode === 'minimum') {
+        if (assetStars < filterStarCount) return false;
+      }
+    }
+    
     return true;
   });
   arr.sort((a,b)=>compareAssets(a, b, sort, direction));
@@ -3694,12 +3814,15 @@ function renderItemList(assets) {
             div.className = 'item-row' + (a.isMissing ? ' is-missing' : '') + (isSelected ? ' selected' : '');
             div.onclick = () => selectItem(a, div);
             const imgSrc=getImg(a), name=getName(a), itemSchema=getAssetSchemaName(a), rarity=getRarity(a);
+            const data={...a.template?.immutable_data,...a.data};
+            const { count: starCount } = getStarInfo(data);
+            const nameWithStars = starCount > 0 ? `${name} ${'⭐'.repeat(starCount)}` : name;
             const subLabel = currentSchema === 'all' ? formatSchemaName(itemSchema) : formatSchemaName(type);
             div.innerHTML = `
               ${imgSrc?`<img class="item-thumb" src="${imgSrc}" alt="${name}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'">` : ''}
               <div class="item-thumb-placeholder" style="${imgSrc?'display:none':''}">${getSchemaEmoji(itemSchema)}</div>
               <div class="item-info">
-                <div class="item-name ${rarity?'rarity-'+rarity:''}">${name}</div>
+                <div class="item-name ${rarity?'rarity-'+rarity:''}">${nameWithStars}</div>
                 <div class="item-sub">${subLabel}${a.isMissing ? ' · Not owned' : ''}</div>
               </div>
               <div class="item-qty">${a.isMissing ? 'x0' : 'x'+count}</div>`;
@@ -3935,30 +4058,10 @@ if (walletModal) {
 const walletModalCloseBtn = document.getElementById('walletModalCloseBtn');
 if (walletModalCloseBtn) walletModalCloseBtn.addEventListener('click', closeWalletModal);
 
-// Initialize app with proper wallet restoration
-(async () => {
-  try {
-    // Restore wallet session first
-    const isRestored = await restoreWalletSession();
-    
-    // Now initialize UI
-    syncMobileInventoryState();
-    updateWalletUi();
-    
-    // If wallet was restored, load inventory data in background
-    if (isRestored && getActiveWallet()) {
-      try {
-        await loadInventory();
-      } catch (error) {
-        console.warn('Failed to load inventory on startup:', error);
-      }
-    }
-  } catch (error) {
-    console.error('App initialization failed:', error);
-    syncMobileInventoryState();
-    updateWalletUi();
-  }
-})();
+loadCollectionMeta();
+syncMobileInventoryState();
+updateWalletUi();
+restoreWalletSession();
 </script>
 
 <script>
