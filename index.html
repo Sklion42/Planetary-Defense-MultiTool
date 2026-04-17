@@ -228,14 +228,11 @@
   }
   .wallet-action {
     flex: 0 0 auto;
-    padding: 0;
-    width: 100%;
+    width: 80%;
     display: flex;
     justify-content: center;
     max-width: 100%;
   }
-
-
 
   .wallet-modal {
     position: fixed;
@@ -382,7 +379,7 @@
   /* ── LAYOUT ── */
   .layout {
     display: grid;
-    grid-template-columns: 220px 1fr 280px;
+    grid-template-columns: 300px 1fr 280px;
     grid-template-areas: "inventory preview details";
     gap: 8px;
     flex: 1;       /* prend toute la hauteur restante */
@@ -538,11 +535,10 @@
   .item-row:hover { background: rgba(43, 145, 192, 0.08); }
   .item-row.selected { background: rgba(43, 157, 192, 0.15); border-left: 2px solid var(--red-bright); }
   .item-thumb {
-    width: 40px; height: 40px; object-fit: cover; flex-shrink: 0;
-    border: 1px solid var(--red-dim); background: #0a181a;
+    width: 55px; height: 55px; object-fit: cover; flex-shrink: 0;
   }
   .item-thumb-placeholder {
-    width: 40px; height: 40px; flex-shrink: 0;
+    width: 55px; height: 55px; flex-shrink: 0;
     background: linear-gradient(135deg, #0a161a, #1a262a);
     border: 1px solid var(--red-dim);
     display: flex; align-items: center; justify-content: center; font-size: 16px;
@@ -681,7 +677,7 @@
 
   @media (max-width: 1230px) {
     .layout {
-      grid-template-columns: 220px minmax(0, 1fr);
+      grid-template-columns: 300px minmax(0, 1fr);
       grid-template-rows: minmax(0, 1.6fr) minmax(0, 0.9fr);
       grid-template-areas:
         "inventory preview"
@@ -1199,8 +1195,6 @@
       letter-spacing: .2px;
     }
     .wallet-action {
-      width: auto;
-      min-width: 112px;
       border-radius: 12px;
       background: linear-gradient(180deg, rgba(25, 44, 57, 0.98), rgba(12, 21, 29, 0.98));
       border: 1px solid rgba(34,211,255,0.14);
@@ -1229,6 +1223,8 @@
     .details-panel,
     .market-panel {
       background: linear-gradient(180deg, rgba(12,18,24,0.92) 0%, rgba(7,11,15,0.94) 100%);
+      border: 1px solid rgba(34, 211, 255, 0.12);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.3), inset 0 1px 12px rgba(34, 211, 255, 0.08);
       backdrop-filter: blur(10px);
     }
     .panel::before {
@@ -1237,7 +1233,7 @@
     }
     .panel::after {
       border-width: 0 11px 11px 0;
-      opacity: 0.75;
+      opacity: 0;
     }
     .panel-title {
       padding: 10px 14px;
@@ -1426,8 +1422,8 @@
       transform: none !important;
       grid-template-rows: auto minmax(0, 0.32fr) auto minmax(0, 0.68fr) auto;
       border-radius: 20px;
-      border-left: 1px solid rgba(34, 211, 255, 0.12);
-      box-shadow: 0 12px 26px rgba(0,0,0,0.3), inset 0 1px 0 rgba(60, 168, 231, 0.4);
+      border: 1px solid rgba(34, 211, 255, 0.12);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.3), inset 0 1px 12px rgba(34, 211, 255, 0.08);
       overflow: hidden;
     }
     body.mobile-view-preview .center-panel {
@@ -1437,8 +1433,9 @@
       min-height: 0;
       height: 100%;
       border-radius: 20px;
-      border-left: 1px solid rgba(34, 211, 255, 0.12);
-      box-shadow: 0 12px 26px rgba(0,0,0,0.3), inset 0 1px 0 rgba(60, 168, 231, 0.4);
+      background: linear-gradient(180deg, rgba(12,18,24,0.92) 0%, rgba(7,11,15,0.94) 100%);
+      border: 1px solid rgba(34, 211, 255, 0.12);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.3), inset 0 1px 12px rgba(34, 211, 255, 0.08);
       overflow: hidden;
     }
     body.mobile-view-details .details-column {
@@ -1449,8 +1446,6 @@
       min-height: 0;
       height: 100%;
       border-radius: 20px;
-      border-left: 1px solid rgba(34, 211, 255, 0.12);
-      box-shadow: 0 12px 26px rgba(0,0,0,0.3), inset 0 2px 0 rgba(60, 168, 231, 0.4);
       overflow: hidden;
     }
     .mobile-menu-tab,
@@ -1478,8 +1473,8 @@
       grid-template-columns: 0.72fr repeat(3, minmax(0, 1fr));
       gap: 8px;
       position: fixed;
-      left: 8px;
-      right: 8px;
+      left: 15px;
+      right: 15px;
       bottom: calc(8px + env(safe-area-inset-bottom));
       padding: 8px;
       border-radius: 22px;
@@ -1999,6 +1994,7 @@
     padding: 12px 12px 10px;
     border-bottom: 1px solid var(--border);
     flex-wrap: wrap;
+    justify-content: center;
   }
   .merc-toolbar .btn-load,
   .merc-mobile-actions .btn-load {
@@ -2315,6 +2311,7 @@
       grid-template-columns: minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr);
       overflow: visible;
+      gap:0;
     }
     .merc-account-panel { grid-area: unset; }
     .merc-roster-panel { grid-area: unset; }
@@ -2326,7 +2323,7 @@
       min-height: 0;
       height: 100%;
       border-radius: 20px;
-      border-left: 1px solid rgba(34, 211, 255, 0.12);
+      border: 1px solid rgba(34, 211, 255, 0.12);
       box-shadow: 0 12px 26px rgba(0,0,0,0.3), inset 0 1px 12px rgba(34, 211, 255, 0.08);
       overflow: hidden;
     }
@@ -2357,8 +2354,8 @@
     .merc-mobile-actions {
       display: none;
       position: fixed;
-      left: 8px;
-      right: 8px;
+      left: 15px;
+      right: 15px;
       bottom: calc(88px + env(safe-area-inset-bottom));
       gap: 8px;
       z-index: 39;
@@ -2465,9 +2462,9 @@
         <span class="badge-count" id="badge-all">0</span>
 </div>
 </div>
-<div class="inv-section-title">My NFTs</div>
+<div class="panel-title">⬡ My NFTs</div>
 <div class="item-list" id="itemList">
-<div class="status-msg">Connect your Anchor wallet above</div>
+<div class="status-msg">Connect your wallet</div>
 </div>
 <div class="sort-bar">
 <div class="sort-group">
@@ -2544,7 +2541,7 @@
 <div class="wallet-label">Anchor</div>
 <div class="wallet-account disconnected" id="mercWalletAccount">Not connected</div>
 </div>
-<button class="btn-load secondary wallet-action" id="mercAnchorActionBtn" onclick="handleAnchorAction()" type="button">Connect</button>
+<button class="btn-load secondary wallet-action" id="mercAnchorActionBtn" onclick="handleWalletAction()" type="button">Connect</button>
 </div>
 </div>
 </div>
@@ -2592,9 +2589,9 @@
       <div class="panel-title">⬡ Payout Console</div>
       <div class="merc-scroll-block merc-payout-scroll">
         <div class="merc-section-card">
-          <div class="merc-section-title">Allocation</div>
+          <div class="merc-section-title">Choose the amount you want to share across all your mercenaries</div>
           <div class="merc-field">
-            <label for="mercPoolInput">TLM pool</label>
+            <label for="mercPoolInput">Allocation</label>
             <input id="mercPoolInput" type="number" min="0" step="0.0001" placeholder="0.0000" oninput="mercApplyDistribution()">
           </div>
           <div class="merc-field">
@@ -2917,7 +2914,6 @@ async function restoreAnchorSession() {
   const actor = String(session.auth?.actor || '');
   if (!actor) return false;
   anchorSession = session;
-  setWalletConnection('anchor', actor);
   return true;
 }
 
@@ -2946,7 +2942,7 @@ async function restoreWaxCloudWallet() {
   const client = buildWaxClient('waxcloudwallet');
   const available = await client.isAutoLoginAvailable();
   if (!available || !client.userAccount) return false;
-  setWalletConnection('waxcloudwallet', client.userAccount);
+  // Client is already built
   return true;
 }
 
@@ -2980,29 +2976,33 @@ async function restoreWombatSession() {
   if (!actor && typeof window.wombat.userAccount === 'string') actor = window.wombat.userAccount.trim();
   if (!actor) return false;
   walletClients.wombat = { raw: window.wombat, mode: 'injected' };
-  setWalletConnection('wombat', actor);
   return true;
 }
 
 async function restoreWalletSession() {
   const preferredProvider = localStorage.getItem(WALLET_PROVIDER_STORAGE_KEY) || '';
-  const restoreOrder = preferredProvider
-    ? [preferredProvider, 'anchor', 'wombat', 'waxcloudwallet'].filter((provider, index, list) => list.indexOf(provider) === index)
-    : ['anchor', 'wombat', 'waxcloudwallet'];
+  const storedAccount = localStorage.getItem(WALLET_ACCOUNT_STORAGE_KEY) || '';
+  
+  if (!preferredProvider || !storedAccount) {
+    clearWalletConnection();
+    return false;
+  }
+
+  const restoreOrder = [preferredProvider, 'anchor', 'wombat', 'waxcloudwallet'].filter((provider, index, list) => list.indexOf(provider) === index);
 
   for (const provider of restoreOrder) {
     try {
       if (provider === 'anchor' && await restoreAnchorSession()) {
-        await loadInventory();
-        return;
+        setWalletConnection('anchor', storedAccount);
+        return true;
       }
       if (provider === 'wombat' && await restoreWombatSession()) {
-        await loadInventory();
-        return;
+        setWalletConnection('wombat', storedAccount);
+        return true;
       }
       if (provider === 'waxcloudwallet' && await restoreWaxCloudWallet()) {
-        await loadInventory();
-        return;
+        setWalletConnection('waxcloudwallet', storedAccount);
+        return true;
       }
     } catch (error) {
       console.warn(`Wallet restore failed for ${provider}`, error);
@@ -3010,6 +3010,7 @@ async function restoreWalletSession() {
   }
 
   clearWalletConnection();
+  return false;
 }
 
 async function disconnectWallet() {
@@ -3933,9 +3934,31 @@ if (walletModal) {
 }
 const walletModalCloseBtn = document.getElementById('walletModalCloseBtn');
 if (walletModalCloseBtn) walletModalCloseBtn.addEventListener('click', closeWalletModal);
-syncMobileInventoryState();
-updateWalletUi();
-restoreWalletSession();
+
+// Initialize app with proper wallet restoration
+(async () => {
+  try {
+    // Restore wallet session first
+    const isRestored = await restoreWalletSession();
+    
+    // Now initialize UI
+    syncMobileInventoryState();
+    updateWalletUi();
+    
+    // If wallet was restored, load inventory data in background
+    if (isRestored && getActiveWallet()) {
+      try {
+        await loadInventory();
+      } catch (error) {
+        console.warn('Failed to load inventory on startup:', error);
+      }
+    }
+  } catch (error) {
+    console.error('App initialization failed:', error);
+    syncMobileInventoryState();
+    updateWalletUi();
+  }
+})();
 </script>
 
 <script>
@@ -3951,8 +3974,16 @@ restoreWalletSession();
       page.classList.toggle('is-active', page.id === pageId);
     });
     syncAppPageBodyClass(pageId);
-    if (pageId === 'inventoryPage' && typeof syncMobileInventoryState === 'function') {
-      requestAnimationFrame(() => syncMobileInventoryState());
+    
+    // Load content if needed
+    if (pageId === 'inventoryPage') {
+      if (typeof syncMobileInventoryState === 'function') {
+        requestAnimationFrame(() => syncMobileInventoryState());
+      }
+      // Load inventory if wallet is connected and data hasn't loaded yet
+      if (getActiveWallet() && !allAssets.length) {
+        requestAnimationFrame(() => loadInventory());
+      }
     }
   }
 
