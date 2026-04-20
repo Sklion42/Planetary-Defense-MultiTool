@@ -1,1 +1,20 @@
-{"name": "planetary-defense-multitool", "version": "1.0.0", "dependencies": {"waxjs.js": "latest"}}
+{
+  "name": "planetary-defense-multitool",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@wharfkit/session": "^1.6.1",
+    "@wharfkit/wallet-plugin-anchor": "^1.6.1",
+    "@wharfkit/wallet-plugin-cloudwallet": "^1.6.4",
+    "@wharfkit/wallet-plugin-wombat": "^1.5.1",
+    "@wharfkit/web-renderer": "^1.4.3"
+  },
+  "devDependencies": {
+    "vite": "^8.0.9"
+  }
+}

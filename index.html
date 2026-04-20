@@ -297,6 +297,14 @@
     display: grid;
     gap: 10px;
   }
+  @media (max-width: 710px) {
+    .wallet-modal {
+      padding: 14px;
+    }
+    .wallet-modal-dialog {
+      border-radius: 20px;
+    }
+  }
   .wallet-option {
     width: 100%;
     border: 1px solid rgba(34, 211, 255, 0.16);
@@ -659,7 +667,7 @@
   }
   .led {
     width: 70px;
-    height: 5px;
+    height: 2px;
     border-radius: 999px;
     background: linear-gradient(90deg, rgba(26, 84, 92, 0.92), var(--red-bright) 50%, rgba(26, 84, 92, 0.92));
     box-shadow: 0 0 5px rgba(43, 162, 192, 0.38), 0 0 0 rgba(34, 211, 255, 0);
@@ -900,12 +908,21 @@
     filter: brightness(1.12);
     box-shadow: 0 0 18px rgba(34, 167, 216, 0.35);
   }
-  .market-link[aria-disabled="true"] {
+  .market-link[aria-disabled="true"],
+  .market-link:disabled {
     background: rgba(80, 92, 100, 0.25);
     color: var(--text-dim);
     clip-path: none;
     box-shadow: none;
+    cursor: default;
+    filter: none;
+  }
+  .market-link[aria-disabled="true"] {
     pointer-events: none;
+  }
+  .market-link:disabled:hover {
+    filter: none;
+    box-shadow: none;
   }
   .market-link.sell-link {
     background: linear-gradient(90deg, #4f2f78, #8d58d4, #4f2f78);
@@ -1423,8 +1440,11 @@
   /* ── V3 MOBILE DOCK / APP NAV ── */
   .mobile-bottom-dock { display: none; }
   @media (max-width: 710px) {
+    :root {
+      --mobile-dock-reserve: calc(76px + env(safe-area-inset-bottom));
+    }
     body {
-      padding-bottom: calc(86px + max(10px, env(safe-area-inset-bottom)));
+      padding-bottom: var(--mobile-dock-reserve);
     }
     .layout {
       grid-template-columns: minmax(0, 1fr);
@@ -1770,7 +1790,7 @@
     .menu-layout {
       justify-content: flex-start;
       align-items: flex-start;
-      padding-bottom: calc(82px + env(safe-area-inset-bottom));
+      padding-bottom: var(--mobile-dock-reserve, calc(76px + env(safe-area-inset-bottom)));
     }
     .menu-panel {
       width: 100%;
@@ -2350,9 +2370,6 @@
     #mercPage .hub-nav-bar {
       display: none;
     }
-    body {
-      padding-bottom: calc(86px + max(10px, env(safe-area-inset-bottom)));
-    }
     .merc-layout {
       grid-template-columns: minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr);
@@ -2399,16 +2416,24 @@
     }
     .merc-mobile-actions {
       display: none;
-      position: fixed;
-      left: 15px;
-      right: 15px;
-      bottom: calc(88px + env(safe-area-inset-bottom));
+      position: relative;
+      left: auto;
+      right: auto;
+      bottom: auto;
+      width: calc(100% - 0px);
+      margin: 0px 0px -5px;
+      padding: 7px;
       gap: 8px;
-      z-index: 39;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(10,16,22,0.94), rgba(6,10,14,0.96));
+      border: 1px solid rgba(34,211,255,0.12);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.04);
+      z-index: 1;
+      flex: 0 0 auto;
     }
     .merc-mobile-actions .btn-load {
-      border-radius: 16px;
-      min-height: 44px;
+      border-radius: 14px;
+      min-height: 40px;
       padding-inline: 10px;
     }
     body.merc-mobile-view-mercs .merc-mobile-actions {
@@ -2615,7 +2640,9 @@
     color: #ffcb7a;
   }
   .blend-card-image {
-    width: min(100%, 430px);
+    width: min(100%, 550px);
+    max-width: 90%;
+    flex: 1;
     aspect-ratio: 1 / 1;
     object-fit: contain;
   }
@@ -2632,6 +2659,14 @@
     display: flex;
     flex-direction: column;
     gap: 7px;
+  }
+  .blend-recipe-bottom {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: auto;
+    flex-shrink: 0;
   }
   .blend-ingredient {
     display: flex;
@@ -2742,13 +2777,15 @@
   }
   .blend-recipe-list.is-compact {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    grid-template-columns: repeat(auto-fit, 112px);
     gap: 8px;
     align-items: center;
+    justify-content: center;
     justify-items: center;
   }
   .blend-ingredient-card {
-    max-width: 100px;
+    width: 112px;
+    min-width: 0;
     border: 1px solid rgba(34, 211, 255, 0.12);
     background: rgba(7, 12, 16, 0.72);
     color: var(--text);
@@ -2768,8 +2805,6 @@
     position: relative;
     width: 100%;
     aspect-ratio: 1 / 1;
-    background: linear-gradient(135deg, #0a161a, #1a262a);
-    border: 1px solid var(--red-dim);
     overflow: hidden;
   }
   .blend-ingredient-img-wrap img {
@@ -2801,12 +2836,16 @@
   }
   .blend-ingredient-card-title {
     margin-top: 6px;
-    min-height: 15px;
+    height: 27px;
     color: var(--text);
     font-size: 11px;
     font-weight: 600;
     line-height: 1.15;
     overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
   .blend-ingredient-card-qty {
     color: #dffcff;
@@ -2815,9 +2854,13 @@
   }
   .blend-ingredient-card-state {
     margin-top: 2px;
+    min-height: 12px;
     color: var(--text-dim);
     font-family: 'Share Tech Mono', monospace;
     font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .blend-picker-modal .wallet-modal-dialog {
     width: min(820px, 100%);
@@ -2841,7 +2884,7 @@
     color: var(--text);
     padding: 0;
     cursor: pointer;
-    text-align: left;
+    text-align: center;
   }
   .blend-picker-card:hover,
   .blend-picker-card.is-selected {
@@ -2882,6 +2925,109 @@
   .blend-picker-modal .wallet-modal-body::-webkit-scrollbar { width: 4px; }
   .blend-picker-modal .wallet-modal-body::-webkit-scrollbar-track { background: transparent; }
   .blend-picker-modal .wallet-modal-body::-webkit-scrollbar-thumb { background: var(--red-dim); }
+  .blend-recipe-tools {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: -3px;
+  }
+  .blend-outcomes-btn {
+    width: auto;
+    max-width: 100%;
+    border: 1px solid rgba(34, 211, 255, 0.18);
+    background: rgba(7, 12, 16, 0.62);
+    color: var(--text-mid);
+    padding: 6px 9px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    line-height: 1;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+  }
+  .blend-outcomes-btn:hover {
+    border-color: rgba(60, 168, 231, 0.46);
+    background: rgba(43, 145, 192, 0.10);
+    color: #dffcff;
+    box-shadow: 0 0 10px rgba(34, 167, 216, 0.10);
+  }
+  .blend-outcomes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 10px;
+  }
+  .blend-outcome-card {
+    min-width: 0;
+    border: 1px solid rgba(34, 211, 255, 0.12);
+    background: rgba(7, 12, 16, 0.72);
+    color: var(--text);
+    text-align: center;
+  }
+  .blend-outcome-card img,
+  .blend-outcome-placeholder {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--red-bright);
+    background: linear-gradient(135deg, #0a161a, #1a262a);
+  }
+  .blend-outcome-copy {
+    padding: 7px 8px 8px;
+  }
+  .blend-outcome-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .blend-outcome-meta {
+    margin-top: 3px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+  }
+  .blend-outcome-percent {
+    margin-top: 6px;
+    color: #75e0a4;
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+  }
+  .blend-outcomes-modal .wallet-modal-dialog {
+    width: min(780px, 100%);
+    max-height: min(780px, calc(100vh - 36px));
+    display: flex;
+    flex-direction: column;
+  }
+  .blend-outcomes-modal .wallet-modal-body {
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .blend-outcomes-modal .wallet-modal-body::-webkit-scrollbar { width: 4px; }
+  .blend-outcomes-modal .wallet-modal-body::-webkit-scrollbar-track { background: transparent; }
+  .blend-outcomes-modal .wallet-modal-body::-webkit-scrollbar-thumb { background: var(--red-dim); }
+  @media (max-width: 710px) {
+    .blend-outcomes-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .blend-outcome-copy {
+      padding: 5px 4px 6px;
+    }
+    .blend-outcome-name {
+      font-size: 10px;
+    }
+    .blend-outcome-meta {
+      font-size: 8px;
+    }
+    .blend-outcome-percent {
+      margin-top: 4px;
+      font-size: 10px;
+    }
+  }
   .blend-result-modal .wallet-modal-dialog {
     width: min(860px, 100%);
     max-height: min(820px, calc(100vh - 36px));
@@ -2905,10 +3051,10 @@
     align-items: center;
     gap: 10px;
   }
-  .blend-result-nav {
+ .blend-result-nav {
     width: 34px;
     height: 64px;
-    border: 1px solid rgba(185, 32, 39, 0.42);
+    border: 1px solid rgba(32, 38, 185, 0.42);
     background: rgba(7, 12, 16, 0.72);
     color: var(--red-bright);
     font-family: 'Orbitron', monospace;
@@ -2916,7 +3062,7 @@
     cursor: pointer;
   }
   .blend-result-nav:hover:not(:disabled) {
-    background: rgba(185, 32, 39, 0.18);
+    background: rgba(32, 85, 185, 0.18);
   }
   .blend-result-nav:disabled {
     opacity: 0.25;
@@ -3078,6 +3224,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 12px;
   }
   .blend-info-grid {
     display: grid;
@@ -3226,7 +3373,26 @@
       flex-direction: column;
     }
     .blend-card-image {
-      width: min(100%, 395px);
+      width: min(85%, 420px);
+      max-height: 420px;
+    }
+    .blend-recipe-list.is-compact {
+      grid-template-columns: repeat(2, 112px);
+      gap: 8px;
+    }
+    .blend-recipe-list.is-compact.is-short {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+    .blend-ingredient-card {
+      width: 112px;
+      padding: 7px;
+    }
+    .blend-recipe-list.is-compact.is-short .blend-ingredient-card {
+      width: min(112px, calc((100vw - 40px) / 3));
     }
   }
 
@@ -3674,6 +3840,21 @@
   </div>
 </div>
 
+<div class="wallet-modal blend-outcomes-modal" id="blendOutcomesModal" aria-hidden="true">
+  <div class="wallet-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="blendOutcomesTitle">
+    <div class="wallet-modal-header">
+      <div class="wallet-modal-title" id="blendOutcomesTitle">Possible Results</div>
+      <div class="wallet-modal-subtitle" id="blendOutcomesSubtitle">Possible random outcomes for this blend.</div>
+    </div>
+    <div class="wallet-modal-body" id="blendOutcomesBody">
+      <div class="status-msg">No possible result selected.</div>
+    </div>
+    <div class="wallet-modal-footer">
+      <button class="btn-load secondary" id="blendOutcomesCloseBtn" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="wallet-modal blend-result-modal" id="blendResultModal" aria-hidden="true">
   <div class="wallet-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="blendResultTitle">
     <div class="wallet-modal-header">
@@ -3690,11 +3871,13 @@
   </div>
 </div>
 
-<script src="./waxjs.js"></script>
 <script>
-window.__anchorLinkLoadError = false;
-window.__anchorTransportLoadError = false;
-</script><script onerror="window.__anchorLinkLoadError=true" src="https://unpkg.com/anchor-link@3.6.0"></script><script onerror="window.__anchorTransportLoadError=true" src="https://unpkg.com/anchor-link-browser-transport@3.6.1"></script><script>
+window.__pdWharfWalletReady = new Promise(resolve => {
+  window.__resolveWharfWalletReady = resolve;
+});
+</script>
+<script type="module" src="/src/wharf-wallet.js"></script>
+<script>
 const ENDPOINTS = [
   'https://wax.api.atomicassets.io/atomicassets/v1',
   'https://aa.dapplica.io/atomicassets/v1',
@@ -3709,20 +3892,21 @@ const COLLECTION = 'planetdefnft';
 const MOBILE_MENU_BREAKPOINT = 710;
 const WAX_RPC_URL = 'https://wax.greymass.com';
 const WAX_CHAIN_ID = '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4';
-const ANCHOR_SESSION_ID = 'planetary-defense-inventory';
+const HYPERION_ENDPOINTS = [
+  'https://wax.eosrio.io/v2',
+  'https://wax.hyperion.eosrio.io/v2',
+  'https://api.waxsweden.org/v2',
+  'https://wax.eosphere.io/v2',
+  'https://wax.cryptolions.io/v2'
+];
 const WALLET_PROVIDER_STORAGE_KEY = 'pd.wallet.provider';
 const WALLET_ACCOUNT_STORAGE_KEY = 'pd.wallet.account';
 let collectionMeta = null;
 const marketPriceCache = new Map();
 let activeDetailsRequest = 0;
-let anchorLink = null;
-let anchorSession = null;
 let connectedWallet = '';
 let activeWalletProvider = '';
-const walletClients = {
-  waxcloudwallet: null,
-  wombat: null
-};
+let activeWalletPermission = 'active';
 
 function getActiveWallet() {
   return connectedWallet.trim();
@@ -3732,7 +3916,7 @@ function getWalletProviderName(provider = activeWalletProvider) {
   switch (provider) {
     case 'anchor': return 'Anchor';
     case 'wombat': return 'Wombat';
-    case 'waxcloudwallet': return 'WaxCloudWallet';
+    case 'waxcloudwallet': return 'MyCloudWallet';
     default: return 'Wallet';
   }
 }
@@ -3801,7 +3985,12 @@ function updateWalletUi() {
   });
 
   const mercPayBtn = document.getElementById('mercPayBtn');
-  if (mercPayBtn) mercPayBtn.disabled = !isConnected || !mercGetValidEntries().length;
+  if (mercPayBtn) {
+    const hasEntries = typeof window.mercGetValidEntries === 'function'
+      ? window.mercGetValidEntries().length > 0
+      : true;
+    mercPayBtn.disabled = !isConnected || !hasEntries;
+  }
 }
 
 function resetInventoryState(message = 'Connect a wallet above') {
@@ -3817,49 +4006,6 @@ function resetInventoryState(message = 'Connect a wallet above') {
   buildSchemaFilters([]);
   setItemList(`<div class="status-msg">${message}</div>`);
   resetDetails();
-}
-
-function getWaxJsCtor() {
-  return window.waxjs?.WaxJS || window.WaxJS || window.waxjs?.default?.WaxJS || null;
-}
-
-function ensureWaxJsAvailable() {
-  const WaxJS = getWaxJsCtor();
-  if (!WaxJS) {
-    throw new Error('waxjs.js is not available on this page.');
-  }
-  return WaxJS;
-}
-
-function buildWaxClient(provider) {
-  const WaxJS = ensureWaxJsAvailable();
-  if (!walletClients[provider]) {
-    walletClients[provider] = new WaxJS({
-      rpcEndpoint: WAX_RPC_URL,
-      tryAutoLogin: false
-    });
-  }
-  return walletClients[provider];
-}
-
-async function ensureAnchorLink() {
-  if (anchorLink) return anchorLink;
-  if (window.__anchorLinkLoadError || window.__anchorTransportLoadError) {
-    throw new Error('Unable to load Anchor libraries. Check your internet connection and refresh.');
-  }
-
-  const AnchorLink = window.AnchorLink?.default || window.AnchorLink;
-  const AnchorLinkBrowserTransport = window.AnchorLinkBrowserTransport?.default || window.AnchorLinkBrowserTransport;
-  if (!AnchorLink || !AnchorLinkBrowserTransport) {
-    throw new Error('Anchor libraries are not available in this page.');
-  }
-
-  const transport = new AnchorLinkBrowserTransport();
-  anchorLink = new AnchorLink({
-    transport,
-    chains: [{ chainId: WAX_CHAIN_ID, nodeUrl: WAX_RPC_URL }]
-  });
-  return anchorLink;
 }
 
 function getWalletModal() {
@@ -3880,207 +4026,43 @@ function openWalletModal() {
   modal.setAttribute('aria-hidden', 'false');
 }
 
-async function connectAnchor() {
-  const link = await ensureAnchorLink();
-  const identity = await link.login(ANCHOR_SESSION_ID);
-  const session = identity?.session;
-  const actor = String(session?.auth?.actor || '');
-  if (!session || !actor) throw new Error('Anchor did not return a signed session.');
-  anchorSession = session;
-  setWalletConnection('anchor', actor);
-  return actor;
+async function getWharfWallet() {
+  return window.__pdWharfWallet || await window.__pdWharfWalletReady;
 }
 
-async function restoreAnchorSession() {
-  try {
-    const link = await ensureAnchorLink();
-    const session = await link.restoreSession(ANCHOR_SESSION_ID);
-    if (!session) {
-      updateWalletUi();
-      return;
-    }
-    anchorSession = session;
-    setWalletConnection('anchor', String(session.auth?.actor || ''));
-    updateWalletUi();
-    await loadInventory();
-  } catch (e) {
-    console.warn('Anchor session restore failed:', e);
-    resetInventoryState();
-    updateWalletUi();
-  }
-}
-
-function extractWombatAccount(loginResult) {
-  if (!loginResult) return '';
-  if (typeof loginResult === 'string') return loginResult;
-  return String(
-    loginResult.account ||
-    loginResult.userAccount ||
-    loginResult.name ||
-    loginResult.accountName ||
-    loginResult.wallet ||
-    ''
-  ).trim();
-}
-
-async function connectWaxCloudWallet() {
-  const client = buildWaxClient('waxcloudwallet');
-  const actor = String(await client.login()).trim();
-  if (!actor) throw new Error('WaxCloudWallet did not return an account.');
-  setWalletConnection('waxcloudwallet', actor);
-  return actor;
-}
-
-async function restoreWaxCloudWallet() {
-  try {
-    // Use a dedicated client with tryAutoLogin:true so WaxJS checks the WCW
-    // session cookie / iframe silently, without showing a popup.
-    const WaxJS = ensureWaxJsAvailable();
-    const autoClient = new WaxJS({
-      rpcEndpoint: WAX_RPC_URL,
-      tryAutoLogin: true
-    });
-
-    const available = await autoClient.isAutoLoginAvailable();
-    if (available && autoClient.userAccount) {
-      const actor = String(autoClient.userAccount).trim();
-      if (actor) {
-        // Reuse this auto-login client for future transactions
-        walletClients['waxcloudwallet'] = autoClient;
-        setWalletConnection('waxcloudwallet', actor);
-        updateWalletUi();
-        await loadInventory();
-        return;
-      }
-    }
-
-    // isAutoLoginAvailable() returned false (session cookie expired or not found).
-    // Fall back to the account stored in localStorage so the UI still shows the
-    // last connected account and the user only needs one click to reconnect.
-    const savedAccount = localStorage.getItem(WALLET_ACCOUNT_STORAGE_KEY);
-    if (savedAccount && localStorage.getItem(WALLET_PROVIDER_STORAGE_KEY) === 'waxcloudwallet') {
-      // Restore UI state only – do NOT load inventory without a live session.
-      connectedWallet = savedAccount.trim();
-      activeWalletProvider = 'waxcloudwallet';
-      updateWalletUi();
-      resetInventoryState('Session expired — click Connect to resume');
-      return;
-    }
-
-    updateWalletUi();
-  } catch (error) {
-    console.warn('WaxCloudWallet session restore failed', error);
-    resetInventoryState();
-    updateWalletUi();
-  }
-}
-
-async function connectWombat() {
-  if (window.wombat) {
-    const api = window.wombat;
-    let loginResult = null;
-    if (typeof api.login === 'function') loginResult = await api.login();
-    let actor = extractWombatAccount(loginResult);
-    if (!actor && typeof api.getAccount === 'function') actor = String(await api.getAccount()).trim();
-    if (!actor && typeof api.userAccount === 'string') actor = api.userAccount.trim();
-    if (!actor) throw new Error('Wombat did not expose an account. Open the page inside Wombat or install the Wombat extension.');
-    walletClients.wombat = { raw: api, mode: 'injected' };
-    setWalletConnection('wombat', actor);
-    return actor;
-  }
-
-  throw new Error('Wombat provider not found in this browser.');
-}
-
-async function restoreWombatSession() {
-  if (!window.wombat) return;
-  try {
-    let actor = '';
-    if (typeof window.wombat.getAccount === 'function') {
-      actor = String(await window.wombat.getAccount()).trim();
-    }
-    if (!actor && typeof window.wombat.userAccount === 'string') {
-      actor = window.wombat.userAccount.trim();
-    }
-    if (!actor) {
-      updateWalletUi();
-      return;
-    }
-    walletClients.wombat = { raw: window.wombat, mode: 'injected' };
-    setWalletConnection('wombat', actor);
-    updateWalletUi();
-    await loadInventory();
-  } catch (error) {
-    console.warn('Wombat session restore failed', error);
-    resetInventoryState();
-    updateWalletUi();
-  }
+function applyWharfWalletState(state) {
+  activeWalletPermission = String(state?.permission || 'active');
+  setWalletConnection(state?.provider || activeWalletProvider, state?.account || '');
 }
 
 async function restoreWalletSession() {
-  const preferredProvider = localStorage.getItem(WALLET_PROVIDER_STORAGE_KEY) || '';
-  
-  // Try to restore preferred provider first
-  if (preferredProvider) {
-    try {
-      if (preferredProvider === 'anchor') {
-        await restoreAnchorSession();
-        return;
-      }
-      if (preferredProvider === 'wombat') {
-        await restoreWombatSession();
-        return;
-      }
-      if (preferredProvider === 'waxcloudwallet') {
-        await restoreWaxCloudWallet();
-        return;
-      }
-    } catch (error) {
-      console.warn(`Preferred wallet restore failed for ${preferredProvider}`, error);
+  try {
+    const wharfWallet = await getWharfWallet();
+    const state = await wharfWallet.restore();
+    if (state?.account) {
+      applyWharfWalletState(state);
+      await loadInventory();
+      return;
     }
+    clearWalletConnection();
+    updateWalletUi();
+  } catch (error) {
+    console.warn('WharfKit session restore failed', error);
+    clearWalletConnection();
+    resetInventoryState();
+    updateWalletUi();
   }
-
-  // Try other providers in order as fallback
-  const restoreOrder = ['anchor', 'wombat', 'waxcloudwallet'].filter(p => p !== preferredProvider);
-  for (const provider of restoreOrder) {
-    try {
-      if (provider === 'anchor') {
-        await restoreAnchorSession();
-        if (getActiveWallet()) return;
-      }
-      if (provider === 'wombat') {
-        await restoreWombatSession();
-        if (getActiveWallet()) return;
-      }
-      if (provider === 'waxcloudwallet') {
-        await restoreWaxCloudWallet();
-        if (getActiveWallet()) return;
-      }
-    } catch (error) {
-      console.warn(`Wallet restore failed for ${provider}`, error);
-    }
-  }
-
-  clearWalletConnection();
-  updateWalletUi();
 }
 
 async function disconnectWallet() {
   try {
-    if (activeWalletProvider === 'anchor' && anchorSession?.remove) {
-      await anchorSession.remove();
-    }
-    if (activeWalletProvider === 'wombat' && walletClients.wombat?.raw?.logout) {
-      await walletClients.wombat.raw.logout();
-    }
-    if (activeWalletProvider === 'waxcloudwallet' && walletClients.waxcloudwallet?.logout) {
-      await walletClients.waxcloudwallet.logout();
-    }
+    const wharfWallet = await getWharfWallet();
+    await wharfWallet.disconnect();
   } catch (error) {
     console.warn('Wallet disconnect cleanup failed', error);
   }
 
-  anchorSession = null;
+  activeWalletPermission = 'active';
   clearWalletConnection();
   resetInventoryState();
 }
@@ -4094,10 +4076,9 @@ async function connectSelectedWallet(provider) {
   });
 
   try {
-    if (provider === 'anchor') await connectAnchor();
-    else if (provider === 'wombat') await connectWombat();
-    else if (provider === 'waxcloudwallet') await connectWaxCloudWallet();
-    else throw new Error(`Unsupported wallet provider: ${provider}`);
+    const wharfWallet = await getWharfWallet();
+    const state = await wharfWallet.connect(provider);
+    applyWharfWalletState(state);
 
     closeWalletModal();
     await loadInventory();
@@ -4120,33 +4101,8 @@ function handleWalletAction() {
 }
 
 async function transactWithActiveWallet(transaction, options = {}) {
-  if (activeWalletProvider === 'anchor') {
-    if (!anchorSession) throw new Error('Anchor session not found.');
-    return anchorSession.transact(transaction, options);
-  }
-
-  if (activeWalletProvider === 'waxcloudwallet') {
-    const client = buildWaxClient('waxcloudwallet');
-    if (!client?.api?.transact) throw new Error('WaxCloudWallet transaction API is unavailable.');
-    return client.api.transact(transaction, {
-      blocksBehind: 3,
-      expireSeconds: 120,
-      ...options
-    });
-  }
-
-  if (activeWalletProvider === 'wombat') {
-    const wombat = walletClients.wombat?.raw || window.wombat;
-    if (wombat?.signTransaction) {
-      return wombat.signTransaction(transaction, options);
-    }
-    if (wombat?.transact) {
-      return wombat.transact(transaction, options);
-    }
-    throw new Error('Wombat transaction API is unavailable in this browser.');
-  }
-
-  throw new Error('No wallet connected.');
+  const wharfWallet = await getWharfWallet();
+  return wharfWallet.transact(transaction, options);
 }
 
 async function fetchWithFallback(path) {
@@ -5847,7 +5803,7 @@ restoreWalletSession();
     const actions = entries.map(entry => ({
       account: TLM_CONTRACT,
       name: 'transfer',
-      authorization: [{ actor: wallet, permission: 'active' }],
+      authorization: [{ actor: wallet, permission: activeWalletPermission || 'active' }],
       data: {
         from: wallet,
         to: entry.account,
@@ -6083,8 +6039,15 @@ restoreWalletSession();
     return Number.isFinite(mint) ? mint : 0;
   }
 
-  function blendSortAssetsByMintDesc(assets) {
-    return [...assets].sort((a, b) => (blendAssetMint(b) - blendAssetMint(a)) || String(b.asset_id || '').localeCompare(String(a.asset_id || '')));
+  function blendSortAssetsByNameThenMintDesc(assets) {
+    return [...assets].sort((a, b) => {
+      const nameCompare = blendAssetDisplayName(a).localeCompare(blendAssetDisplayName(b), undefined, {
+        numeric: true,
+        sensitivity: 'base'
+      });
+      if (nameCompare) return nameCompare;
+      return (blendAssetMint(b) - blendAssetMint(a)) || String(b.asset_id || '').localeCompare(String(a.asset_id || ''));
+    });
   }
 
   function blendAssetImage(asset) {
@@ -6093,6 +6056,27 @@ restoreWalletSession();
 
   function blendAssetDisplayName(asset) {
     return getName(asset);
+  }
+
+  function f12KeyCollectionMarketHref({ collection = COLLECTION, templateId = '', schemaName = '' } = {}) {
+    const params = new URLSearchParams({
+      collection: collection || COLLECTION,
+      sort: 'price',
+      order: 'asc'
+    });
+    if (templateId) params.set('template_id', String(templateId));
+    if (schemaName) params.set('schema_name', String(schemaName));
+    return `https://f12key.eu/market?${params.toString()}`;
+  }
+
+  function f12KeyBlendsHref(collection = COLLECTION) {
+    return `https://f12key.eu/blends?collection=${encodeURIComponent(collection || COLLECTION)}`;
+  }
+
+  function f12KeyBlendHref(blendId, collection = COLLECTION) {
+    const params = new URLSearchParams({ collection: collection || COLLECTION });
+    if (blendId) params.set('blend', String(blendId));
+    return `https://f12key.eu/blends?${params.toString()}`;
   }
 
   function blendFirstResultTemplate(row) {
@@ -6105,6 +6089,76 @@ restoreWalletSession();
       }
     }
     return '';
+  }
+
+  function blendOutcomeWeight(outcome) {
+    const data = blendVariantData(outcome);
+    const raw = outcome?.odds
+      ?? outcome?.chance
+      ?? outcome?.probability
+      ?? outcome?.weight
+      ?? outcome?.rate
+      ?? data?.odds
+      ?? data?.chance
+      ?? data?.probability
+      ?? data?.weight
+      ?? data?.rate;
+    const value = Number(String(raw ?? '').replace('%', ''));
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  }
+
+  function blendOutcomeResultTemplates(outcome) {
+    return (outcome?.results || [])
+      .map(result => {
+        if (blendVariantName(result) !== 'ON_DEMAND_NFT_RESULT') return '';
+        return String(blendVariantData(result).template_id || '');
+      })
+      .filter(Boolean);
+  }
+
+  function blendPossibleOutcomes(row) {
+    const rolls = (row?.rolls || [])
+      .map(roll => (roll?.outcomes || []).filter(outcome => blendOutcomeResultTemplates(outcome).length))
+      .filter(outcomes => outcomes.length);
+    if (!rolls.length) return [];
+
+    const chanceByTemplate = new Map();
+    rolls.forEach(outcomes => {
+      const weights = outcomes.map(blendOutcomeWeight);
+      const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+      const fallbackPercent = outcomes.length ? 100 / outcomes.length : 0;
+      outcomes.forEach((outcome, index) => {
+        const templates = blendOutcomeResultTemplates(outcome);
+        const percent = totalWeight > 0 ? (weights[index] / totalWeight) * 100 : fallbackPercent;
+        const splitPercent = templates.length ? percent / templates.length : percent;
+        templates.forEach(templateId => {
+          chanceByTemplate.set(templateId, (chanceByTemplate.get(templateId) || 0) + (splitPercent / rolls.length));
+        });
+      });
+    });
+
+    return [...chanceByTemplate.entries()]
+      .map(([templateId, percent]) => {
+        const template = blendTemplateMap.get(String(templateId));
+        return {
+          templateId,
+          percent,
+          name: template ? blendTemplateName(template) : `Template #${templateId}`,
+          image: template ? blendTemplateImage(template) : ''
+        };
+      })
+      .sort((a, b) => b.percent - a.percent || a.name.localeCompare(b.name));
+  }
+
+  function blendHasMultiplePossibleOutcomes(row) {
+    return blendPossibleOutcomes(row).length > 1;
+  }
+
+  function blendFormatPercent(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number)) return '-';
+    if (number >= 10) return `${number.toFixed(number % 1 ? 1 : 0)}%`;
+    return `${number.toFixed(number < 1 ? 2 : 1)}%`;
   }
 
   function blendCategoryParts(row) {
@@ -6508,7 +6562,7 @@ restoreWalletSession();
   blendRenderList = blendRenderListInventoryStyle;
 
   function blendGetOwnedCandidates(requirement) {
-    return blendSortAssetsByMintDesc(ownedAssets.filter(asset => {
+    return blendSortAssetsByNameThenMintDesc(ownedAssets.filter(asset => {
       if (String(asset.collection?.collection_name || asset.collection_name || COLLECTION) !== requirement.collection) return false;
       if (requirement.type === 'template') return String(getTemplateId(asset)) === String(requirement.templateId);
       if (requirement.type === 'schema') return getAssetSchemaName(asset) === requirement.schema;
@@ -6566,7 +6620,10 @@ restoreWalletSession();
         templateId: String(data.template_id),
         label,
         sub: `Template #${data.template_id}`,
-        marketHref: `https://neftyblocks.com/marketplace/listing?collection_name=${encodeURIComponent(data.collection_name || COLLECTION)}&template_id=${encodeURIComponent(data.template_id)}&sort=price&order=asc`
+        marketHref: f12KeyCollectionMarketHref({
+          collection: data.collection_name || COLLECTION,
+          templateId: data.template_id
+        })
       };
     }
     if (kind === 'SCHEMA_INGREDIENT') {
@@ -6579,7 +6636,10 @@ restoreWalletSession();
         schema: String(data.schema_name || ''),
         label: display.description || `Any ${formatSchemaName(String(data.schema_name || 'NFT'))}`,
         sub: `Schema ${formatSchemaName(String(data.schema_name || ''))}`,
-        marketHref: `https://neftyblocks.com/marketplace/listing?collection_name=${encodeURIComponent(data.collection_name || COLLECTION)}&schema_name=${encodeURIComponent(data.schema_name || '')}&sort=price&order=asc`
+        marketHref: f12KeyCollectionMarketHref({
+          collection: data.collection_name || COLLECTION,
+          schemaName: data.schema_name || ''
+        })
       };
     }
     if (kind === 'ATTRIBUTE_INGREDIENT') {
@@ -6595,7 +6655,10 @@ restoreWalletSession();
         attributes: attrs,
         label: display.description || attrLabel || 'Matching attribute NFT',
         sub: `Attribute · ${formatSchemaName(String(data.schema_name || ''))}`,
-        marketHref: `https://neftyblocks.com/marketplace/listing?collection_name=${encodeURIComponent(data.collection_name || COLLECTION)}&schema_name=${encodeURIComponent(data.schema_name || '')}&sort=price&order=asc`
+        marketHref: f12KeyCollectionMarketHref({
+          collection: data.collection_name || COLLECTION,
+          schemaName: data.schema_name || ''
+        })
       };
     }
     if (kind === 'COLLECTION_INGREDIENT') {
@@ -6607,7 +6670,9 @@ restoreWalletSession();
         collection: String(data.collection_name || COLLECTION),
         label: `Any NFT from ${data.collection_name || COLLECTION}`,
         sub: 'Collection ingredient',
-        marketHref: `https://neftyblocks.com/marketplace/listing?collection_name=${encodeURIComponent(data.collection_name || COLLECTION)}&sort=price&order=asc`
+        marketHref: f12KeyCollectionMarketHref({
+          collection: data.collection_name || COLLECTION
+        })
       };
     }
     if (kind === 'FT_INGREDIENT') {
@@ -6628,7 +6693,7 @@ restoreWalletSession();
       amount,
       label: kind.replace(/_/g, ' ') || 'Unsupported ingredient',
       sub: 'Not automated in this build',
-      marketHref: `https://neftyblocks.com/collection/${COLLECTION}/blends`
+      marketHref: f12KeyBlendsHref(COLLECTION)
     };
   }
 
@@ -6642,14 +6707,15 @@ restoreWalletSession();
     const selectedByCopy = [];
     const requirements = (row.ingredients || []).map(blendRequirementFromIngredient);
     const missing = [];
+    const blendHref = f12KeyBlendHref(row.blend_id);
     if (Number(row.security_id || 0) > 0) {
-      missing.push({ label: 'Protected blend', need: 1, have: 0, marketHref: `https://neftyblocks.com/collection/${COLLECTION}/blends/blend.nefty/${row.blend_id}` });
+      missing.push({ label: 'Protected blend', need: 1, have: 0, marketHref: blendHref });
     }
     if (!blendIsAvailableByTime(row)) {
-      missing.push({ label: 'Inactive blend window', need: 1, have: 0, marketHref: `https://neftyblocks.com/collection/${COLLECTION}/blends/blend.nefty/${row.blend_id}` });
+      missing.push({ label: 'Inactive blend window', need: 1, have: 0, marketHref: blendHref });
     }
     if (Number(row.max || 0) > 0 && Number(row.use_count || 0) + copies > Number(row.max || 0)) {
-      missing.push({ label: 'Blend supply limit', need: copies, have: Math.max(0, Number(row.max || 0) - Number(row.use_count || 0)), marketHref: `https://neftyblocks.com/collection/${COLLECTION}/blends/blend.nefty/${row.blend_id}` });
+      missing.push({ label: 'Blend supply limit', need: copies, have: Math.max(0, Number(row.max || 0) - Number(row.use_count || 0)), marketHref: blendHref });
     }
 
     for (let copy = 0; copy < copies; copy += 1) {
@@ -6687,15 +6753,16 @@ restoreWalletSession();
     const selectedAssetIds = [];
     const selectedSlots = [];
     const missing = [];
+    const blendHref = f12KeyBlendHref(row.blend_id);
 
     if (Number(row.security_id || 0) > 0) {
-      missing.push({ label: 'Protected blend', need: 1, have: 0, marketHref: `https://neftyblocks.com/collection/${COLLECTION}/blends/blend.nefty/${row.blend_id}` });
+      missing.push({ label: 'Protected blend', need: 1, have: 0, marketHref: blendHref });
     }
     if (!blendIsAvailableByTime(row)) {
-      missing.push({ label: 'Inactive blend window', need: 1, have: 0, marketHref: `https://neftyblocks.com/collection/${COLLECTION}/blends/blend.nefty/${row.blend_id}` });
+      missing.push({ label: 'Inactive blend window', need: 1, have: 0, marketHref: blendHref });
     }
     if (Number(row.max || 0) > 0 && Number(row.use_count || 0) + copies > Number(row.max || 0)) {
-      missing.push({ label: 'Blend supply limit', need: copies, have: Math.max(0, Number(row.max || 0) - Number(row.use_count || 0)), marketHref: `https://neftyblocks.com/collection/${COLLECTION}/blends/blend.nefty/${row.blend_id}` });
+      missing.push({ label: 'Blend supply limit', need: copies, have: Math.max(0, Number(row.max || 0) - Number(row.use_count || 0)), marketHref: blendHref });
     }
 
     requirements.forEach((requirement, reqIndex) => {
@@ -6769,7 +6836,6 @@ restoreWalletSession();
     const name = blendName(selectedBlend);
     const preview = document.getElementById('blendPreviewArea');
     const canBlend = availability.maxCopies > 0 && desiredQty <= availability.maxCopies;
-    const firstMissing = availability.missing.find(item => item.marketHref);
     const recipeHtml = availability.requirements.map(req => {
       const candidates = getActiveWallet() && req.automatable ? blendGetOwnedCandidates(req) : [];
       const have = req.automatable ? candidates.length : 0;
@@ -6793,9 +6859,7 @@ restoreWalletSession();
         </div>
         ${canBlend
           ? `<button class="market-link" type="button" onclick="blendExecuteSelected()">Blend</button>`
-          : firstMissing
-            ? `<a class="market-link" href="${blendEscape(firstMissing.marketHref)}" target="_blank" rel="noopener">Buy missing</a>`
-            : '<button class="btn-load secondary" type="button" disabled>Unavailable</button>'}
+          : '<button class="market-link" type="button" disabled>Blend</button>'}
       </div>`;
     blendRenderDetails(selectedBlend, availability);
     blendRenderList(blendFilteredRows);
@@ -6859,7 +6923,6 @@ restoreWalletSession();
     const name = blendName(selectedBlend);
     const preview = document.getElementById('blendPreviewArea');
     const canBlend = availability.maxCopies > 0 && desiredQty <= availability.maxCopies && !availability.missing.length;
-    const firstMissing = availability.missing.find(item => item.marketHref);
     const slotsByRequirement = new Map();
     (availability.selectedSlots || []).forEach(slot => {
       if (!slotsByRequirement.has(slot.reqIndex)) slotsByRequirement.set(slot.reqIndex, []);
@@ -6896,9 +6959,7 @@ restoreWalletSession();
         </div>
         ${canBlend
           ? `<button class="market-link" type="button" onclick="blendExecuteSelected()">Blend</button>`
-          : firstMissing
-            ? `<a class="market-link" href="${blendEscape(firstMissing.marketHref)}" target="_blank" rel="noopener">Buy missing</a>`
-            : '<button class="btn-load secondary" type="button" disabled>Unavailable</button>'}
+          : '<button class="market-link" type="button" disabled>Blend</button>'}
       </div>`;
     blendRenderDetails(selectedBlend, availability);
     blendRenderList(blendFilteredRows);
@@ -6959,33 +7020,38 @@ restoreWalletSession();
     const name = blendName(selectedBlend);
     const preview = document.getElementById('blendPreviewArea');
     const canBlend = availability.maxCopies > 0 && desiredQty <= availability.maxCopies && !availability.missing.length;
-    const firstMissing = availability.missing.find(item => item.marketHref);
     const recipeHtml = availability.requirements.map((requirement, reqIndex) => {
       const slots = blendSlotsForRequirement(availability, reqIndex);
       return blendRenderIngredientCard(requirement, reqIndex, slots, desiredQty);
     }).join('');
     const maxInput = Math.max(1, availability.maxCopies);
     const inputValue = Math.min(desiredQty, maxInput);
+    const ingredientCount = availability.requirements.length;
+    const recipeListClass = `blend-recipe-list is-compact${ingredientCount > 0 && ingredientCount < 4 ? ' is-short' : ''}`;
+    const outcomesButton = blendHasMultiplePossibleOutcomes(selectedBlend)
+      ? '<div class="blend-recipe-tools"><button class="blend-outcomes-btn" type="button" onclick="blendOpenOutcomesModal()">View Possible Results</button></div>'
+      : '';
 
     preview.innerHTML = `
       ${img ? `<img class="blend-card-image" src="${blendEscape(img)}" alt="${blendEscape(name)}">` : '<div class="empty-card"><div class="icon">BLD</div><div>No recipe image</div></div>'}
-      <div class="blend-recipe-list is-compact">${recipeHtml || '<div class="status-msg">No NFT ingredient listed.</div>'}</div>
-      <div class="blend-action-box">
-        <div>
-          <label for="blendQtyInput">Quantity - max ${availability.maxCopies}</label>
-          <div class="blend-qty-control">
-            <input id="blendQtyInput" type="number" min="1" max="${maxInput}" value="${inputValue}" oninput="blendRenderSelected()">
-            <div class="blend-qty-stepper">
-              <button class="blend-qty-step is-up" type="button" aria-label="Increase quantity" onclick="blendAdjustQty(1)"></button>
-              <button class="blend-qty-step is-down" type="button" aria-label="Decrease quantity" onclick="blendAdjustQty(-1)"></button>
+      <div class="blend-recipe-bottom">
+        <div class="${recipeListClass}">${recipeHtml || '<div class="status-msg">No NFT ingredient listed.</div>'}</div>
+        ${outcomesButton}
+        <div class="blend-action-box">
+          <div>
+            <label for="blendQtyInput">Quantity - max ${availability.maxCopies}</label>
+            <div class="blend-qty-control">
+              <input id="blendQtyInput" type="number" min="1" max="${maxInput}" value="${inputValue}" oninput="blendRenderSelected()">
+              <div class="blend-qty-stepper">
+                <button class="blend-qty-step is-up" type="button" aria-label="Increase quantity" onclick="blendAdjustQty(1)"></button>
+                <button class="blend-qty-step is-down" type="button" aria-label="Decrease quantity" onclick="blendAdjustQty(-1)"></button>
+              </div>
             </div>
           </div>
+          ${canBlend
+            ? `<button class="market-link" type="button" onclick="blendExecuteSelected()">Blend</button>`
+            : '<button class="market-link" type="button" disabled>Blend</button>'}
         </div>
-        ${canBlend
-          ? `<button class="market-link" type="button" onclick="blendExecuteSelected()">Blend</button>`
-          : firstMissing
-            ? `<a class="market-link" href="${blendEscape(firstMissing.marketHref)}" target="_blank" rel="noopener">Buy missing</a>`
-            : '<button class="btn-load secondary" type="button" disabled>Unavailable</button>'}
       </div>`;
     blendRenderDetails(selectedBlend, availability);
     blendRenderList(blendFilteredRows);
@@ -7120,6 +7186,52 @@ restoreWalletSession();
     blendPickerState = null;
   }
 
+  function blendOpenOutcomesModal() {
+    if (!selectedBlend) return;
+    const modal = document.getElementById('blendOutcomesModal');
+    if (modal) {
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+    blendRenderOutcomesModal();
+  }
+
+  function blendCloseOutcomesModal() {
+    const modal = document.getElementById('blendOutcomesModal');
+    if (modal) {
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function blendRenderOutcomesModal() {
+    const title = document.getElementById('blendOutcomesTitle');
+    const subtitle = document.getElementById('blendOutcomesSubtitle');
+    const body = document.getElementById('blendOutcomesBody');
+    if (!title || !subtitle || !body || !selectedBlend) return;
+
+    const outcomes = blendPossibleOutcomes(selectedBlend);
+    title.textContent = 'Possible Results';
+    subtitle.textContent = `${blendName(selectedBlend)} - ${outcomes.length} possible outcome${outcomes.length > 1 ? 's' : ''}`;
+
+    if (outcomes.length <= 1) {
+      body.innerHTML = '<div class="status-msg">This blend has a single known result.</div>';
+      return;
+    }
+
+    body.innerHTML = `<div class="blend-outcomes-grid">${outcomes.map(outcome => `
+      <div class="blend-outcome-card">
+        ${outcome.image
+          ? `<img src="${blendEscape(outcome.image)}" alt="${blendEscape(outcome.name)}" loading="lazy">`
+          : '<div class="blend-outcome-placeholder">NFT</div>'}
+        <div class="blend-outcome-copy">
+          <div class="blend-outcome-name" title="${blendEscape(outcome.name)}">${blendEscape(outcome.name)}</div>
+          <div class="blend-outcome-meta">Template #${blendEscape(outcome.templateId)}</div>
+          <div class="blend-outcome-percent">${blendFormatPercent(outcome.percent)}</div>
+        </div>
+      </div>`).join('')}</div>`;
+  }
+
   function blendAdjustQty(delta) {
     const input = document.getElementById('blendQtyInput');
     if (!input) return;
@@ -7153,7 +7265,7 @@ restoreWalletSession();
       </div>
       ${Number(row.security_id || 0) > 0 ? '<div class="status-msg" style="color:#ffcb7a">Protected blend: automatic fuse is disabled in this build.</div>' : ''}
       ${desc ? `<div class="desc-block"><div class="desc-title">Description</div><div class="blend-desc">${desc}</div></div>` : ''}
-      <a class="market-link" href="https://neftyblocks.com/collection/${COLLECTION}/blends/blend.nefty/${row.blend_id}" target="_blank" rel="noopener">Open on NeftyBlocks</a>`;
+      <a class="market-link" href="${blendEscape(f12KeyBlendHref(row.blend_id))}" target="_blank" rel="noopener">View on F12Key</a>`;
   }
 
   function blendFormatDescription(value) {
@@ -7468,18 +7580,63 @@ restoreWalletSession();
     return value;
   }
 
+  function blendLooksLikeTxId(value) {
+    return typeof value === 'string' && /^[0-9a-f]{64}$/i.test(value);
+  }
+
+  function blendExtractTransactionId(result) {
+    const direct = result?.transaction_id
+      || result?.trx_id
+      || result?.processed?.id
+      || result?.response?.transaction_id
+      || result?.response?.trx_id
+      || result?.response?.processed?.id;
+    if (blendLooksLikeTxId(direct)) return direct;
+
+    const seen = new WeakSet();
+    const visit = (node, depth = 0) => {
+      if (!node || depth > 8) return '';
+      if (typeof node === 'string') return blendLooksLikeTxId(node) ? node : '';
+      if (typeof node !== 'object') return '';
+      if (seen.has(node)) return '';
+      seen.add(node);
+      if (Array.isArray(node)) {
+        for (const item of node) {
+          const found = visit(item, depth + 1);
+          if (found) return found;
+        }
+        return '';
+      }
+      for (const key of ['transaction_id', 'trx_id', 'id']) {
+        if (blendLooksLikeTxId(node[key])) return node[key];
+      }
+      for (const value of Object.values(node)) {
+        const found = visit(value, depth + 1);
+        if (found) return found;
+      }
+      return '';
+    };
+    return visit(result);
+  }
+
   function blendExtractMintedAssetIds(result, wallet) {
     const ids = new Set();
     const owner = String(wallet || '');
-    const visit = node => {
+    const seen = new WeakSet();
+    const visit = (node, depth = 0) => {
       if (!node) return;
+      if (depth > 32) return;
       if (Array.isArray(node)) {
-        node.forEach(visit);
+        node.forEach(item => visit(item, depth + 1));
         return;
       }
       if (typeof node !== 'object') return;
+      if (seen.has(node)) return;
+      seen.add(node);
       const act = node.act;
-      if (act?.account === ATOMIC_CONTRACT && act?.name === 'logmint') {
+      const account = String(act?.account || '');
+      const name = String(act?.name || '');
+      if (account === ATOMIC_CONTRACT && name === 'logmint') {
         const data = act.data || {};
         const collection = String(data.collection_name || data.collection || COLLECTION);
         const newOwner = String(data.new_asset_owner || data.owner || owner);
@@ -7487,10 +7644,26 @@ restoreWalletSession();
           ids.add(String(data.asset_id));
         }
       }
-      Object.values(node).forEach(visit);
+      Object.values(node).forEach(value => visit(value, depth + 1));
     };
     visit(result);
     return [...ids];
+  }
+
+  async function blendFetchTransactionTrace(txid) {
+    if (!blendLooksLikeTxId(txid)) return null;
+    for (const base of HYPERION_ENDPOINTS) {
+      try {
+        const url = `${base}/history/get_transaction?id=${encodeURIComponent(txid)}`;
+        const response = await fetch(url, { signal: AbortSignal.timeout(9000) });
+        if (!response.ok) continue;
+        const data = await response.json();
+        if (data?.trx_id || data?.actions || data?.transaction_id) return data;
+      } catch (error) {
+        console.warn(`Hyperion transaction lookup failed: ${base}`, error.message || error);
+      }
+    }
+    return null;
   }
 
   async function blendFetchAssetsByIds(assetIds) {
@@ -7519,11 +7692,15 @@ restoreWalletSession();
     });
   }
 
-  async function blendFindResultAssets({ beforeAssetIds, expectedCount, traceAssetIds }) {
-    const traceIds = [...new Set((traceAssetIds || []).map(String).filter(Boolean))];
-    const traceSet = new Set(traceIds);
+  async function blendFindResultAssets({ beforeAssetIds, expectedCount, traceAssetIds, txid, wallet }) {
+    let traceIds = [...new Set((traceAssetIds || []).map(String).filter(Boolean))];
     let found = [];
-    for (let attempt = 0; attempt < 6; attempt += 1) {
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      if (!traceIds.length && txid) {
+        const transactionTrace = await blendFetchTransactionTrace(txid);
+        traceIds = blendExtractMintedAssetIds(transactionTrace, wallet);
+      }
+      const traceSet = new Set(traceIds);
       const traceAssets = await blendFetchAssetsByIds(traceIds);
       await loadInventory();
       const ownedTraceAssets = traceIds.length
@@ -7537,16 +7714,17 @@ restoreWalletSession();
       if (found.length >= expectedCount || (traceIds.length && found.length >= traceIds.length)) break;
       blendSetResultState({
         status: 'waiting',
-        message: `Transaction confirmed. Waiting for result NFTs... (${found.length}/${expectedCount})`
+        message: traceIds.length
+          ? `Transaction confirmed. Waiting for result NFT data... (${found.length}/${Math.max(expectedCount, traceIds.length)})`
+          : `Transaction confirmed. Waiting for result NFTs... (${found.length}/${expectedCount})`
       });
-      await blendDelay(1800);
+      await blendDelay(attempt < 4 ? 1800 : 3000);
     }
     return found.slice(0, Math.max(expectedCount, found.length));
   }
 
   function blendGetPermission() {
-    if (activeWalletProvider === 'anchor') return String(anchorSession?.auth?.permission || 'active');
-    return 'active';
+    return activeWalletPermission || 'active';
   }
 
   async function blendExecuteSelected() {
@@ -7600,7 +7778,7 @@ restoreWalletSession();
     try {
       blendOpenResultModal({ expectedCount: qty, blendLabel: blendName(selectedBlend) });
       const result = await transactWithActiveWallet({ actions }, { blocksBehind: 3, expireSeconds: 120 });
-      const txid = typeof result === 'string' ? result : (result?.transaction_id || result?.processed?.id || result?.response?.transaction_id || '');
+      const txid = typeof result === 'string' ? result : blendExtractTransactionId(result);
       const traceAssetIds = blendExtractMintedAssetIds(result, wallet);
       blendSetResultState({
         status: 'waiting',
@@ -7609,7 +7787,7 @@ restoreWalletSession();
           ? `Transaction confirmed. Loading ${traceAssetIds.length} result NFT${traceAssetIds.length > 1 ? 's' : ''}...`
           : 'Transaction confirmed. Waiting for result NFTs...'
       });
-      const resultAssets = await blendFindResultAssets({ beforeAssetIds, expectedCount: qty, traceAssetIds });
+      const resultAssets = await blendFindResultAssets({ beforeAssetIds, expectedCount: qty, traceAssetIds, txid, wallet });
       if (resultAssets.length) {
         blendSetResultState({
           status: 'ready',
@@ -7737,6 +7915,8 @@ restoreWalletSession();
   window.blendConfirmIngredientPicker = blendConfirmIngredientPicker;
   window.blendCloseIngredientPicker = blendCloseIngredientPicker;
   window.blendAdjustQty = blendAdjustQty;
+  window.blendOpenOutcomesModal = blendOpenOutcomesModal;
+  window.blendCloseOutcomesModal = blendCloseOutcomesModal;
   window.blendMoveResult = blendMoveResult;
   window.blendCloseResultModal = blendCloseResultModal;
   window.blendSetMobileView = blendSetMobileView;
@@ -7767,6 +7947,14 @@ restoreWalletSession();
   if (blendPickerCancelBtn) blendPickerCancelBtn.addEventListener('click', blendCloseIngredientPicker);
   const blendPickerConfirmBtn = document.getElementById('blendPickerConfirmBtn');
   if (blendPickerConfirmBtn) blendPickerConfirmBtn.addEventListener('click', blendConfirmIngredientPicker);
+  const blendOutcomesModal = document.getElementById('blendOutcomesModal');
+  if (blendOutcomesModal) {
+    blendOutcomesModal.addEventListener('click', event => {
+      if (event.target === blendOutcomesModal) blendCloseOutcomesModal();
+    });
+  }
+  const blendOutcomesCloseBtn = document.getElementById('blendOutcomesCloseBtn');
+  if (blendOutcomesCloseBtn) blendOutcomesCloseBtn.addEventListener('click', blendCloseOutcomesModal);
   const blendResultModal = document.getElementById('blendResultModal');
   if (blendResultModal) {
     blendResultModal.addEventListener('click', event => {
@@ -7778,6 +7966,7 @@ restoreWalletSession();
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       blendCloseIngredientPicker();
+      blendCloseOutcomesModal();
       blendCloseResultModal();
     }
   });
