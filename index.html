@@ -599,6 +599,50 @@
     color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 11px;
     padding: 2px 6px; outline: none; cursor: pointer;
   }
+  .inventory-filter-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .inventory-filter-row .blend-search,
+  .inventory-filter-row select {
+    width: 100%;
+    background: rgba(7, 12, 16, 0.9);
+    border: 1px solid rgba(34, 211, 255, 0.18);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    padding: 8px 9px;
+    outline: none;
+  }
+  .inventory-filter-row .blend-search,
+  .inventory-star-filter {
+    grid-column: 1 / -1;
+  }
+  .inventory-star-filter {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .inventory-star-btn {
+    min-width: 0;
+    min-height: 34px;
+    border: none;
+    background: none;
+    color: rgba(142, 149, 157, 0.9);
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s, text-shadow .15s;
+  }
+  .inventory-star-btn:hover {
+    border-color: rgba(255, 203, 122, 0.45);
+    color: #ffcb7a;
+  }
+  .inventory-star-btn.is-active {
+    color: #f8c84e;
+    text-shadow: 0 0 8px rgba(248, 200, 78, 0.38);
+  }
 
   /* ── CENTER ── */
   .center-panel {
@@ -3482,42 +3526,27 @@
       <div class="item-list" id="itemList">
        <div class="status-msg">Connect your wallet</div>
       </div>
-      <div class="sort-bar">
-        <div class="sort-group">
-          <label for="sortSelect">Sort</label>
-          <select id="sortSelect" onchange="applySort()">
-          <option value="rarity">Rarity</option>
-          <option value="name">Name</option>
-          <option value="mint">Mint #</option>
-          </select>
-          <select id="sortDirection" onchange="applySort()">
-          <option value="asc">Asc.</option>
-          <option value="desc">Desc.</option>
-          </select>
-        </div>
-        <div class="sort-group">
-          <label for="ownershipFilter">Filter</label>
-          <select id="ownershipFilter" onchange="applySort()">
+      <div class="sort-bar inventory-filter-row">
+        <input class="blend-search" id="inventorySearchInput" oninput="applySort()" placeholder="Search NFT by name, type, rarity, schema, ..." type="search">
+        <select id="ownershipFilter" onchange="applySort()" aria-label="Ownership filter">
           <option value="all">All</option>
-          <option value="owned">Owned only</option>
-          <option value="missing">Not owned only</option>
-          </select>
-        </div>
-        <div class="sort-group">
-          <label for="starFilterMode">Stars</label>
-          <select id="starFilterMode" onchange="applySort()">
-          <option value="exact">Exactly</option>
-          <option value="minimum">At least</option>
-          </select>
-          <select id="starFilterValue" onchange="applySort()">
-          <option value="all">All ⭐</option>
-          <option value="0">0 stars</option>
-          <option value="1">1 star</option>
-          <option value="2">2 stars</option>
-          <option value="3">3 stars</option>
-          <option value="4">4 stars</option>
-          <option value="5">5 stars</option>
-          </select>
+          <option value="owned">Owned</option>
+          <option value="missing">Not owned</option>
+        </select>
+        <select id="sortSelect" onchange="applySort()" aria-label="Sort inventory">
+          <option value="rarity-asc">Rarity &#8593;</option>
+          <option value="rarity-desc">Rarity &#8595;</option>
+          <option value="name-asc">Name &#8593;</option>
+          <option value="name-desc">Name &#8595;</option>
+          <option value="mint-asc">Mint # &#8593;</option>
+          <option value="mint-desc">Mint # &#8595;</option>
+        </select>
+        <div class="inventory-star-filter" role="group" aria-label="Star filter">
+          <button class="inventory-star-btn" data-star-filter="1" type="button" aria-label="Filter 1 star" onclick="setInventoryStarFilter(1)">&#9733;</button>
+          <button class="inventory-star-btn" data-star-filter="2" type="button" aria-label="Filter 2 stars" onclick="setInventoryStarFilter(2)">&#9733;</button>
+          <button class="inventory-star-btn" data-star-filter="3" type="button" aria-label="Filter 3 stars" onclick="setInventoryStarFilter(3)">&#9733;</button>
+          <button class="inventory-star-btn" data-star-filter="4" type="button" aria-label="Filter 4 stars" onclick="setInventoryStarFilter(4)">&#9733;</button>
+          <button class="inventory-star-btn" data-star-filter="5" type="button" aria-label="Filter 5 stars" onclick="setInventoryStarFilter(5)">&#9733;</button>
         </div>
       </div>
     </div>
@@ -3998,7 +4027,6 @@ function resetInventoryState(message = 'Connect a wallet above') {
   schemaCounts = {};
   collapsedTypeGroups = {};
   ownershipFilter = 'all';
-  starFilterMode = 'exact';
   starFilterValue = 'all';
   resetFilterControls();
   buildSchemaFilters([]);
@@ -4375,9 +4403,11 @@ async function loadCollectionMeta() {
 
 let allAssets = [], filteredAssets = [], renderedAssets = [], currentSchema = 'all', selectedAsset = null, schemaCounts = {}, collapsedTypeGroups = {};
 let ownershipFilter = 'all';
-let starFilterMode = 'exact';
 let starFilterValue = 'all';
 let ownedAssets = [], collectionTemplates = [];
+const INVENTORY_EXCLUDED_TEMPLATE_IDS = new Set(['888545']);
+const INVENTORY_TEMPLATE_SORT_ID_OVERRIDES = { '888549': 888545 };
+const INVENTORY_TEMPLATE_SORT_TEMPLATE_OVERRIDES = { '888549': '888545' };
 
 function getAssetKey(asset) {
   if (!asset) return '';
@@ -4389,6 +4419,41 @@ function getTemplateId(asset) {
   return asset?.template?.template_id || asset?.template_id || null;
 }
 
+function isInventoryExcludedTemplateId(templateId) {
+  return INVENTORY_EXCLUDED_TEMPLATE_IDS.has(String(templateId || ''));
+}
+
+function getInventoryTemplateSortId(asset) {
+  const templateId = String(getTemplateId(asset) || '');
+  const sortId = INVENTORY_TEMPLATE_SORT_ID_OVERRIDES[templateId] ?? templateId;
+  const number = Number(sortId || 0);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function getInventorySortTemplate(asset) {
+  const templateId = String(getTemplateId(asset) || '');
+  const sortTemplateId = INVENTORY_TEMPLATE_SORT_TEMPLATE_OVERRIDES[templateId];
+  if (!sortTemplateId) return asset?.template || null;
+  return collectionTemplates.find(template => String(template?.template_id) === sortTemplateId) || asset?.template || null;
+}
+
+function getInventorySortAsset(asset) {
+  const sortTemplate = getInventorySortTemplate(asset);
+  if (!sortTemplate || sortTemplate === asset?.template) return asset;
+  return {
+    ...asset,
+    template: sortTemplate,
+    template_id: sortTemplate.template_id,
+    data: {}
+  };
+}
+
+function getInventoryMintSortValue(asset) {
+  const templateId = String(getTemplateId(asset) || '');
+  if (INVENTORY_TEMPLATE_SORT_TEMPLATE_OVERRIDES[templateId]) return 0;
+  return asset?.template_mint || 0;
+}
+
 function getAssetSchemaName(asset) {
   return asset?.schema?.schema_name || asset?.template?.schema?.schema_name || asset?.template?.schema_name || 'unknown';
 }
@@ -4398,7 +4463,7 @@ function getIssuedSupply(template) {
 }
 
 function isTemplateDisplayable(template) {
-  return Boolean(template?.template_id);
+  return Boolean(template?.template_id) && !isInventoryExcludedTemplateId(template.template_id);
 }
 
 function createMissingAssetFromTemplate(template) {
@@ -4414,16 +4479,17 @@ function createMissingAssetFromTemplate(template) {
 }
 
 function buildDisplayAssets(owned, templates) {
+  const displayOwned = owned.filter(asset => !isInventoryExcludedTemplateId(getTemplateId(asset)));
   const ownedTemplateIds = new Set();
-  owned.forEach(asset => {
+  displayOwned.forEach(asset => {
     const templateId = getTemplateId(asset);
     if (templateId) ownedTemplateIds.add(String(templateId));
   });
   const missingAssets = templates
-    .filter(template => template?.template_id)
+    .filter(isTemplateDisplayable)
     .filter(template => !ownedTemplateIds.has(String(template.template_id)))
     .map(createMissingAssetFromTemplate);
-  return [...owned, ...missingAssets];
+  return [...displayOwned, ...missingAssets];
 }
 
 function rebuildSchemaCounts(assets) {
@@ -4563,31 +4629,62 @@ const RARITY_ORDER = {mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5,'':
 function getRarity(a) { const d={...a.data,...a.template?.immutable_data}; return (d.rarity||d.Rarity||'').toLowerCase(); }
 function compareAssets(a, b, sort, direction='asc') {
   const multiplier = direction === 'desc' ? -1 : 1;
+  const sortA = getInventorySortAsset(a);
+  const sortB = getInventorySortAsset(b);
   if (sort==='rarity') {
-    return (((RARITY_ORDER[getRarity(b)]??6)-(RARITY_ORDER[getRarity(a)]??6)) * multiplier) || getName(a).localeCompare(getName(b));
+    return (((RARITY_ORDER[getRarity(sortB)]??6)-(RARITY_ORDER[getRarity(sortA)]??6)) * multiplier)
+      || getName(sortA).localeCompare(getName(sortB))
+      || ((getInventoryTemplateSortId(a) - getInventoryTemplateSortId(b)) * multiplier);
   }
   if (sort==='name') {
-    return getName(a).localeCompare(getName(b)) * multiplier;
+    return (getName(sortA).localeCompare(getName(sortB)) * multiplier)
+      || ((getInventoryTemplateSortId(a) - getInventoryTemplateSortId(b)) * multiplier);
   }
   if (sort==='mint') {
-    return (((a.template_mint||0)-(b.template_mint||0)) * multiplier) || getName(a).localeCompare(getName(b));
+    return ((getInventoryMintSortValue(a)-getInventoryMintSortValue(b)) * multiplier)
+      || ((getInventoryTemplateSortId(a) - getInventoryTemplateSortId(b)) * multiplier)
+      || getName(sortA).localeCompare(getName(sortB));
   }
   return 0;
 }
+function parseInventorySortValue(value) {
+  const raw = String(value || 'rarity-asc');
+  const [sort = 'rarity', direction = 'asc'] = raw.split('-');
+  return {
+    sort: ['rarity', 'name', 'mint'].includes(sort) ? sort : 'rarity',
+    direction: direction === 'desc' ? 'desc' : 'asc'
+  };
+}
+function syncInventoryStarFilterButtons() {
+  const selected = starFilterValue === 'all' ? 0 : Number(starFilterValue || 0);
+  document.querySelectorAll('.inventory-star-btn').forEach(button => {
+    const value = Number(button.dataset.starFilter || 0);
+    const active = selected > 0 && value <= selected;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+function setInventoryStarFilter(value) {
+  const next = String(value);
+  starFilterValue = starFilterValue === next ? 'all' : next;
+  syncInventoryStarFilterButtons();
+  applySort();
+}
 function resetFilterControls() {
   const ownershipFilterEl = document.getElementById('ownershipFilter');
-  const starFilterModeEl = document.getElementById('starFilterMode');
-  const starFilterValueEl = document.getElementById('starFilterValue');
+  const inventorySearchEl = document.getElementById('inventorySearchInput');
+  const sortSelectEl = document.getElementById('sortSelect');
   if (ownershipFilterEl) ownershipFilterEl.value = 'all';
-  if (starFilterModeEl) starFilterModeEl.value = 'exact';
-  if (starFilterValueEl) starFilterValueEl.value = 'all';
+  if (inventorySearchEl) inventorySearchEl.value = '';
+  if (sortSelectEl) sortSelectEl.value = 'rarity-asc';
+  starFilterValue = 'all';
+  syncInventoryStarFilterButtons();
 }
 function applySort() {
-  const sort = document.getElementById('sortSelect').value;
-  const direction = document.getElementById('sortDirection').value;
+  const { sort, direction } = parseInventorySortValue(document.getElementById('sortSelect')?.value);
   ownershipFilter = document.getElementById('ownershipFilter')?.value || 'all';
-  starFilterMode = document.getElementById('starFilterMode')?.value || 'exact';
-  starFilterValue = document.getElementById('starFilterValue')?.value || 'all';
+  const query = (document.getElementById('inventorySearchInput')?.value || '').trim().toLowerCase();
+  syncInventoryStarFilterButtons();
   
   const arr = filteredAssets.filter(asset => {
     // Ownership filter
@@ -4596,18 +4693,25 @@ function applySort() {
     } else if (ownershipFilter === 'missing') {
       if (!asset.isMissing) return false;
     }
+
+    if (query) {
+      const haystack = [
+        getName(asset),
+        getRarity(asset),
+        getItemType(asset),
+        getAssetSchemaName(asset),
+        getTemplateId(asset),
+        asset.asset_id
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(query)) return false;
+    }
     
     // Star filter
     if (starFilterValue !== 'all') {
       const data = {...asset.template?.immutable_data, ...asset.data};
       const { count: assetStars } = getStarInfo(data);
       const filterStarCount = Number(starFilterValue);
-      
-      if (starFilterMode === 'exact') {
-        if (assetStars !== filterStarCount) return false;
-      } else if (starFilterMode === 'minimum') {
-        if (assetStars < filterStarCount) return false;
-      }
+      if (assetStars !== filterStarCount) return false;
     }
     
     return true;
@@ -4656,8 +4760,7 @@ function getSchemaEmoji(schema) {
 // ── RENDER LIST ──────────────────────────────────────────────
 function renderItemList(assets) {
   const ul = document.getElementById('itemList');
-  const sort = document.getElementById('sortSelect')?.value || 'rarity';
-  const direction = document.getElementById('sortDirection')?.value || 'asc';
+  const { sort, direction } = parseInventorySortValue(document.getElementById('sortSelect')?.value);
   renderedAssets = [...assets];
   if (!assets.length) {
     const emptyLabel = ownershipFilter === 'owned'
@@ -6088,6 +6191,15 @@ window._deepLinkIntent = null;
     return String(data.rarity || data.Rarity || '').trim().toLowerCase();
   }
 
+  function blendTemplateSchema(template) {
+    return String(template?.schema?.schema_name || template?.schema_name || '').trim();
+  }
+
+  function blendTemplateType(template) {
+    const data = template?.immutable_data || {};
+    return String(data.type || data.Type || data.unit_type || data.UnitType || data.class || data.Class || '').trim();
+  }
+
   function blendAssetMint(asset) {
     const mint = Number(asset?.template_mint || 0);
     return Number.isFinite(mint) ? mint : 0;
@@ -6199,10 +6311,35 @@ window._deepLinkIntent = null;
           percent,
           name: template ? blendTemplateName(template) : `Template #${templateId}`,
           image: template ? blendTemplateImage(template) : '',
-          rarity: template ? blendTemplateRarity(template) : ''
+          rarity: template ? blendTemplateRarity(template) : '',
+          schema: template ? blendTemplateSchema(template) : '',
+          type: template ? blendTemplateType(template) : ''
         };
       })
       .sort((a, b) => b.percent - a.percent || a.name.localeCompare(b.name));
+  }
+
+  function blendSearchText(row) {
+    const parts = blendCategoryParts(row);
+    const outcomes = blendPossibleOutcomes(row);
+    return [
+      blendName(row),
+      parts.raw,
+      parts.main,
+      parts.sub,
+      row.blend_id,
+      ...outcomes.flatMap(outcome => [
+        outcome.name,
+        outcome.rarity,
+        outcome.schema,
+        formatSchemaName(outcome.schema || ''),
+        outcome.type,
+        formatSchemaName(outcome.type || ''),
+        outcome.templateId,
+        `template ${outcome.templateId}`,
+        `template #${outcome.templateId}`
+      ])
+    ].filter(Boolean).join(' ').toLowerCase();
   }
 
   function blendBestOutcomeRarityRank(row) {
@@ -6424,7 +6561,7 @@ if (intent?.page === 'blend') {
     let rows = blendRows.filter(row => {
       const parts = blendCategoryParts(row);
       if (currentBlendCategory !== 'all' && parts.main !== currentBlendCategory) return false;
-      if (query && !`${blendName(row)} ${parts.raw} ${row.blend_id}`.toLowerCase().includes(query)) return false;
+      if (query && !blendSearchText(row).includes(query)) return false;
       const availability = blendGetAvailability(row, 1);
       if (!blendMatchesReadyFilter(availability, readyFilter)) return false;
       return true;
