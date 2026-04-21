@@ -4775,11 +4775,19 @@ function renderItemList(assets) {
 // ── SELECT ───────────────────────────────────────────────────
 function selectItem(asset, el) {
   selectedAsset = asset;
-  document.querySelectorAll('.item-row').forEach(r=>r.classList.remove('selected'));
+  document.querySelectorAll('.item-row').forEach(r => r.classList.remove('selected'));
   if (el) el.classList.add('selected');
   setMobileInventoryOpen(false);
   renderCard(asset); renderDetails(asset);
   if (isMobileMenuMode()) setMobileView('preview');
+  // ── Sync URL
+  const assetId = asset?.asset_id;
+  const templateId = getTemplateId(asset);
+  if (assetId && !String(assetId).startsWith('missing-')) {
+    history.replaceState(null, '', `#inventory-asset-${assetId}`);
+  } else if (templateId) {
+    history.replaceState(null, '', `#inventory-template-${templateId}`);
+  }
 }
 
 // ── CARD ─────────────────────────────────────────────────────
@@ -5917,6 +5925,8 @@ window._deepLinkIntent = null;
       btn.classList.toggle('is-active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
+    // ── Sync URL
+  history.replaceState(null, '', `#manageMerc-${next}`);
   }
 
   function mercSyncMobileState() {
@@ -7468,6 +7478,10 @@ if (intent?.page === 'blend') {
   if (fromUser && isBlendMobileMode()) {
     blendSetMobileView('recipe');
   }
+  // ── Sync URL
+  if (selectedBlend) {
+    history.replaceState(null, '', `#blendOrganizer-blend-${selectedBlend.blend_id}`);
+  }
 }
 
   function isBlendMobileMode() {
@@ -7487,6 +7501,9 @@ if (intent?.page === 'blend') {
       btn.classList.toggle('is-active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
+    // ── Sync URL
+  const blendSuffix = selectedBlend ? `-blend-${selectedBlend.blend_id}` : '';
+  history.replaceState(null, '', `#blendOrganizer${blendSuffix}`);
   }
 
   function blendSyncMobileState() {
