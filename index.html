@@ -7419,12 +7419,17 @@ loadMenuCollectionMeta();
   }
 
   function blendSelectBlend(blendId, fromUser = false) {
-    selectedBlend = blendRows.find(row => String(row.blend_id) === String(blendId)) || null;
-    blendRenderSelected();
-    if (fromUser && isBlendMobileMode()) {
-      blendSetMobileView('recipe');
-    }
+  selectedBlend = blendRows.find(row => String(row.blend_id) === String(blendId)) || null;
+  blendManualSelections = {};   // reset aussi les choix manuels
+  blendOpenChoiceKey = '';
+  // Reset la quantité à 1 pour le nouveau blend
+  const qtyInput = document.getElementById('blendQtyInput');
+  if (qtyInput) qtyInput.value = '1';
+  blendRenderSelected();
+  if (fromUser && isBlendMobileMode()) {
+    blendSetMobileView('recipe');
   }
+}
 
   function isBlendMobileMode() {
     return window.innerWidth <= MOBILE_MENU_BREAKPOINT;
