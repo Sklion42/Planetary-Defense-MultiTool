@@ -4781,13 +4781,11 @@ function selectItem(asset, el) {
   renderCard(asset); renderDetails(asset);
   if (isMobileMenuMode()) setMobileView('preview');
   // ── Sync URL
-  const assetId = asset?.asset_id;
-  const templateId = getTemplateId(asset);
-  if (assetId && !String(assetId).startsWith('missing-')) {
-    history.replaceState(null, '', `#inventory-asset-${assetId}`);
-  } else if (templateId) {
-    history.replaceState(null, '', `#inventory-template-${templateId}`);
-  }
+  // APRÈS
+const templateId = getTemplateId(asset);
+if (templateId) {
+  history.replaceState(null, '', `#inventory-template-${templateId}`);
+}
 }
 
 // ── CARD ─────────────────────────────────────────────────────
@@ -5162,10 +5160,10 @@ window._deepLinkIntent = null;
   if (targetPage === 'blendPage' && subView === 'blend' && extraId) {
     window._deepLinkIntent = { page: 'blend', id: extraId };
   }
-
-  if (targetPage === 'inventoryPage' && subView && extraId) {
-    window._deepLinkIntent = { page: 'inventory', type: subView, id: extraId };
-  }
+  
+if (targetPage === 'inventoryPage' && subView === 'template' && extraId) {
+  window._deepLinkIntent = { page: 'inventory', type: 'template', id: extraId };
+}
 })();
 </script>
 
@@ -6337,7 +6335,7 @@ if (intent?.page === 'blend') {
   async function blendLoadRows({ preferCache = true, silent = false } = {}) {
     if (blendIsLoading) return;
     if (blendLoaded) {
-      blendApplyFilters();
+      blendRenderLoadedRows();
       return;
     }
     blendIsLoading = true;
