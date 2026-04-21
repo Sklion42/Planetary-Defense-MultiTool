@@ -5000,23 +5000,37 @@ restoreWalletSession();
     else document.body.classList.add('page-menu');
   }
 
-  function showAppPage(pageId) {
-    document.querySelectorAll('.app-page').forEach(page => {
-      page.classList.toggle('is-active', page.id === pageId);
-    });
-    syncAppPageBodyClass(pageId);
-    
-    // Load content if needed
-    if (pageId === 'inventoryPage') {
-      if (typeof syncMobileInventoryState === 'function') {
-        requestAnimationFrame(() => syncMobileInventoryState());
-      }
-      // Load inventory if wallet is connected and data hasn't loaded yet
-      if (getActiveWallet() && !allAssets.length) {
-        requestAnimationFrame(() => loadInventory());
-      }
+  // APRÈS
+const PAGE_HASH_MAP = {
+  menuPage:      '',
+  inventoryPage: 'inventory',
+  blendPage:     'blendOrganizer',
+  mercPage:      'manageMerc',
+};
+const HASH_PAGE_MAP = Object.fromEntries(
+  Object.entries(PAGE_HASH_MAP).map(([id, hash]) => [hash, id])
+);
+
+function showAppPage(pageId) {
+  document.querySelectorAll('.app-page').forEach(page => {
+    page.classList.toggle('is-active', page.id === pageId);
+  });
+  syncAppPageBodyClass(pageId);
+
+  // ── Sync URL hash (sans recharger la page)
+  const hash = PAGE_HASH_MAP[pageId] ?? '';
+  const newHash = hash ? `#${hash}` : location.pathname + location.search;
+  history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);
+
+  if (pageId === 'inventoryPage') {
+    if (typeof syncMobileInventoryState === 'function') {
+      requestAnimationFrame(() => syncMobileInventoryState());
+    }
+    if (getActiveWallet() && !allAssets.length) {
+      requestAnimationFrame(() => loadInventory());
     }
   }
+}
 
   function openInventoryPage() {
     showAppPage('inventoryPage');
@@ -5102,8 +5116,15 @@ restoreWalletSession();
     }
   }
 
-  loadMenuCollectionMeta();
-  showAppPage('menuPage');
+  // APRÈS
+loadMenuCollectionMeta();
+
+// ── Deep link : lire le hash de l'URL au chargement
+(function applyDeepLink() {
+  const hash = location.hash.replace('#', '').trim().toLowerCase();
+  const targetPage = HASH_PAGE_MAP[hash] || 'menuPage';
+  showAppPage(targetPage);
+})();
 </script>
 
 
