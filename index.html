@@ -7691,14 +7691,24 @@ restoreWalletSession();
   async function blendFindResultAssets({ beforeAssetIds, expectedCount, traceAssetIds, txid, wallet }) {
     let traceIds = [...new Set((traceAssetIds || []).map(String).filter(Boolean))];
     let found = [];
+
     for (let attempt = 0; attempt < 12; attempt += 1) {
+
+      // ── 1. PRIORITÉ : si on a déjà les IDs depuis les traces inline, on fetch direct
+      //    On ne fait le Hyperion lookup QUE si on n'a vraiment aucun ID
       if (!traceIds.length && txid) {
         const transactionTrace = await blendFetchTransactionTrace(txid);
         traceIds = blendExtractMintedAssetIds(transactionTrace, wallet);
       }
+
       const traceSet = new Set(traceIds);
-      const traceAssets = await blendFetchAssetsByIds(traceIds);
-      await loadInventory();
+
+      // ── 2. PARALLÉLISATION : fetch par IDs + reload inventaire en même temps
+      const [traceAssets] = await Promise.all([
+        blendFetchAssetsByIds(traceIds),
+        loadInventory()
+      ]);
+
       const ownedTraceAssets = traceIds.length
         ? ownedAssets.filter(asset => traceSet.has(String(asset.asset_id)))
         : [];
@@ -7706,16 +7716,24 @@ restoreWalletSession();
         .filter(asset => blendAssetCollectionName(asset) === COLLECTION)
         .filter(asset => !beforeAssetIds.has(String(asset.asset_id)))
         .sort((a, b) => Number(a.asset_id || 0) - Number(b.asset_id || 0));
+
+      // ── 3. ORDRE DE PRIORITÉ INVERSÉ : traceAssets en premier (fetch direct par ID)
+      //    car c'est la source la plus précise et la plus rapide
       found = blendUniqueAssets([...traceAssets, ...ownedTraceAssets, ...newOwnedAssets]);
+
       if (found.length >= expectedCount || (traceIds.length && found.length >= traceIds.length)) break;
+
       blendSetResultState({
         status: 'waiting',
         message: traceIds.length
           ? `Transaction confirmed. Waiting for result NFT data... (${found.length}/${Math.max(expectedCount, traceIds.length)})`
           : `Transaction confirmed. Waiting for result NFTs... (${found.length}/${expectedCount})`
       });
-      await blendDelay(attempt < 4 ? 1800 : 3000);
+
+      // ── 4. DÉLAI RÉDUIT : 800ms les 3 premiers essais, puis 2000ms
+      await blendDelay(attempt < 3 ? 800 : 2000);
     }
+
     return found.slice(0, Math.max(expectedCount, found.length));
   }
 
