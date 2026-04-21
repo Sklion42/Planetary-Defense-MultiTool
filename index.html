@@ -3634,10 +3634,6 @@
 </div>
 
 <div id="mercPage" class="app-page">
-  <div class="title-bar">
-<div class="line"></div>
-<div class="line" style="background:linear-gradient(90deg,transparent,var(--red-dim))"></div>
-</div>
 <div class="top-bar">
 <div class="collection-banner" hidden="" id="mercCollectionBanner">
 <img alt="Collection artwork" class="collection-logo" id="mercCollectionLogo" loading="lazy"/>
@@ -3879,10 +3875,10 @@ window.__pdWharfWalletReady = new Promise(resolve => {
 <script type="module" src="/src/wharf-wallet.js"></script>
 <script>
 const ENDPOINTS = [
+  'https://atomic-api.wax.cryptolions.io/atomicassets/v1',
   'https://wax.api.atomicassets.io/atomicassets/v1',
   'https://aa.dapplica.io/atomicassets/v1',
   'https://atomic.wax.eosrio.io/atomicassets/v1',
-  'https://atomic-api.wax.cryptolions.io/atomicassets/v1',
 ];
 let API = ENDPOINTS[0];
 const MARKET_ENDPOINTS = ENDPOINTS.map(endpoint => endpoint.replace('/atomicassets/', '/atomicmarket/'));
@@ -3893,11 +3889,11 @@ const MOBILE_MENU_BREAKPOINT = 710;
 const WAX_RPC_URL = 'https://wax.greymass.com';
 const WAX_CHAIN_ID = '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4';
 const HYPERION_ENDPOINTS = [
+  'https://wax.cryptolions.io/v2',
   'https://wax.eosrio.io/v2',
   'https://wax.hyperion.eosrio.io/v2',
   'https://api.waxsweden.org/v2',
-  'https://wax.eosphere.io/v2',
-  'https://wax.cryptolions.io/v2'
+  'https://wax.eosphere.io/v2'
 ];
 const WALLET_PROVIDER_STORAGE_KEY = 'pd.wallet.provider';
 const WALLET_ACCOUNT_STORAGE_KEY = 'pd.wallet.account';
