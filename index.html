@@ -4538,6 +4538,16 @@ async function loadInventory() {
     console.error(e);
     setItemList(`<div class="status-msg" style="color:#e74c3c">Error: ${e.message}</div>`);
   }
+  // Après que allAssets est peuplé :
+const intent = window._deepLinkIntent;
+if (intent?.page === 'inventory') {
+  window._deepLinkIntent = null;
+  const match = allAssets.find(a =>
+    intent.type === 'asset'    ? String(a.asset_id) === intent.id :
+    intent.type === 'template' ? String(getTemplateId(a)) === intent.id : false
+  );
+  if (match) selectItem(match, null);
+}
 }
 
 // ── SCHEMAS ──────────────────────────────────────────────────
@@ -5120,10 +5130,27 @@ function showAppPage(pageId) {
 loadMenuCollectionMeta();
 
 // ── Deep link : lire le hash de l'URL au chargement
+window._deepLinkIntent = null;
+
 (function applyDeepLink() {
-  const hash = location.hash.replace('#', '').trim().toLowerCase();
-  const targetPage = HASH_PAGE_MAP[hash] || 'menuPage';
+  const raw = location.hash.replace('#', '').trim();
+  const parts = raw.split('-');
+  const pageHash = parts[0].toLowerCase();
+  const targetPage = HASH_PAGE_MAP[pageHash] || 'menuPage';
   showAppPage(targetPage);
+
+  // Merc sub-view
+  if (targetPage === 'mercPage' && parts[1]) {
+    requestAnimationFrame(() => { if (typeof mercSetMobileView === 'function') mercSetMobileView(parts[1]); });
+  }
+
+  // Stocker l'intention inventory/blend
+  if (targetPage === 'inventoryPage' && parts[1] && parts[2]) {
+    window._deepLinkIntent = { page: 'inventory', type: parts[1], id: parts[2] };
+  }
+  if (targetPage === 'blendPage' && parts[1] === 'blend' && parts[2]) {
+    window._deepLinkIntent = { page: 'blend', id: parts[2] };
+  }
 })();
 </script>
 
@@ -6249,7 +6276,19 @@ loadMenuCollectionMeta();
     }
     blendBuildCategoryList();
     blendApplyFilters();
-    if (!selectedBlend) blendSelectBlend(blendRows[0].blend_id);
+    // APRÈS
+const intent = window._deepLinkIntent;
+if (intent?.page === 'blend') {
+  window._deepLinkIntent = null;
+  const match = blendRows.find(r => String(r.blend_id) === intent.id);
+  if (match) {
+    blendSelectBlend(match.blend_id);
+  } else if (!selectedBlend) {
+    blendSelectBlend(blendRows[0].blend_id);
+  }
+} else if (!selectedBlend) {
+  blendSelectBlend(blendRows[0].blend_id);
+}
   }
 
   async function blendFetchRowsFromChain() {
