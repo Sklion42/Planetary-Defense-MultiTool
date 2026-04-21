@@ -4467,16 +4467,10 @@ async function loadCollectionTemplates() {
 // ── LOAD ─────────────────────────────────────────────────────
 async function loadInventory() {
   const wallet = getActiveWallet();
-  if (!wallet) {
-    resetInventoryState();
-    alert('Connect a wallet first.');
-    return;
-  }
-
   const currentRequest = Date.now();
   loadInventory.requestId = currentRequest;
 
-  setItemList('<div class="status-msg"><span class="spinner"></span>Loading your NFTs…</div>');
+  setItemList('<div class="status-msg"><span class="spinner"></span>Scanning collection catalog…</div>');
   showEmptyCard();
   resetDetails();
   allAssets = []; ownedAssets = []; collectionTemplates = []; schemaCounts = {}; collapsedTypeGroups = {}; renderedAssets = [];
@@ -4484,70 +4478,56 @@ async function loadInventory() {
   try {
     await loadCollectionMeta();
 
-    let page = 1, batch;
-    do {
-      const j = await fetchWithFallback(`/assets?collection_name=${COLLECTION}&owner=${wallet}&page=${page}&limit=500&order=desc&sort=asset_id`);
-      batch = Array.isArray(j?.data) ? j.data : [];
-      ownedAssets = ownedAssets.concat(batch);
-      page++;
-    } while (batch.length === 500);
-
+    // ── Phase 1 : charger les templates de la collection (sans wallet)
+    await loadCollectionTemplates();
     if (loadInventory.requestId !== currentRequest) return;
 
-    allAssets = [...ownedAssets];
-
-    if (!ownedAssets.length) {
-      setItemList('<div class="status-msg"><span class="spinner"></span>Scanning collection catalog…</div>');
+    if (!collectionTemplates.length) {
+      setItemList(`<div class="status-msg">No issued <strong>${COLLECTION}</strong> NFTs found.</div>`);
       buildSchemaFilters([]);
-    } else {
-      rebuildSchemaCounts(allAssets);
-      buildSchemaFilters(Object.keys(schemaCounts));
-      filterSchema('all', document.querySelector('[data-schema="all"]'));
+      return;
     }
 
-    try {
-      await loadCollectionTemplates();
+    // Afficher tout de suite la collection complète (tout grisé, isMissing)
+    allAssets = buildDisplayAssets([], collectionTemplates);
+    rebuildSchemaCounts(allAssets);
+    buildSchemaFilters(Object.keys(schemaCounts));
+    filterSchema(currentSchema || 'all', document.querySelector(`[data-schema="${currentSchema || 'all'}"]`) || document.querySelector('[data-schema="all"]'));
+
+    // ── Phase 2 : si wallet connecté, charger les owned assets
+    if (wallet) {
+      setItemList('<div class="status-msg"><span class="spinner"></span>Loading your NFTs…</div>');
+      let page = 1, batch;
+      do {
+        const j = await fetchWithFallback(`/assets?collection_name=${COLLECTION}&owner=${wallet}&page=${page}&limit=500&order=desc&sort=asset_id`);
+        batch = Array.isArray(j?.data) ? j.data : [];
+        ownedAssets = ownedAssets.concat(batch);
+        page++;
+      } while (batch.length === 500);
+
       if (loadInventory.requestId !== currentRequest) return;
 
+      // Fusionner : owned + templates non possédés (grisés)
       allAssets = buildDisplayAssets(ownedAssets, collectionTemplates);
-      if (!allAssets.length) {
-        setItemList(`<div class="status-msg">No issued <strong>${COLLECTION}</strong> NFTs found.</div>`);
-        buildSchemaFilters([]);
-        return;
-      }
-
       rebuildSchemaCounts(allAssets);
       buildSchemaFilters(Object.keys(schemaCounts));
       filterSchema(currentSchema || 'all', document.querySelector(`[data-schema="${currentSchema || 'all'}"]`) || document.querySelector('[data-schema="all"]'));
-    } catch (templateError) {
-      console.warn('Unable to load collection catalog. Showing owned NFTs only.', templateError);
-      if (loadInventory.requestId !== currentRequest) return;
-
-      allAssets = [...ownedAssets];
-      if (!allAssets.length) {
-        setItemList(`<div class="status-msg">No owned <strong>${COLLECTION}</strong> NFTs found.</div>`);
-        buildSchemaFilters([]);
-        return;
-      }
-
-      rebuildSchemaCounts(allAssets);
-      buildSchemaFilters(Object.keys(schemaCounts));
-      filterSchema('all', document.querySelector('[data-schema="all"]'));
     }
+
   } catch(e) {
     console.error(e);
     setItemList(`<div class="status-msg" style="color:#e74c3c">Error: ${e.message}</div>`);
   }
-  // Après que allAssets est peuplé :
-const intent = window._deepLinkIntent;
-if (intent?.page === 'inventory') {
-  window._deepLinkIntent = null;
-  const match = allAssets.find(a =>
-    intent.type === 'asset'    ? String(a.asset_id) === intent.id :
-    intent.type === 'template' ? String(getTemplateId(a)) === intent.id : false
-  );
-  if (match) selectItem(match, null);
-}
+
+  // Deep link intent
+  const intent = window._deepLinkIntent;
+  if (intent?.page === 'inventory') {
+    window._deepLinkIntent = null;
+    const match = allAssets.find(a =>
+      intent.type === 'template' ? String(getTemplateId(a)) === intent.id : false
+    );
+    if (match) selectItem(match, null);
+  }
 }
 
 // ── SCHEMAS ──────────────────────────────────────────────────
@@ -5045,7 +5025,7 @@ function showAppPage(pageId) {
     if (typeof syncMobileInventoryState === 'function') {
       requestAnimationFrame(() => syncMobileInventoryState());
     }
-    if (getActiveWallet() && !allAssets.length) {
+    if (!allAssets.length) {
       requestAnimationFrame(() => loadInventory());
     }
   }
