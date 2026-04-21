@@ -1,5 +1,6 @@
 {
-  "outputDirectory": ".",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api/mission-data",
