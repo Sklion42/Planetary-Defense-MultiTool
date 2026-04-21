@@ -5026,7 +5026,7 @@ const PAGE_HASH_MAP = {
   mercPage:      'manageMerc',
 };
 const HASH_PAGE_MAP = Object.fromEntries(
-  Object.entries(PAGE_HASH_MAP).map(([id, hash]) => [hash, id])
+  Object.entries(PAGE_HASH_MAP).map(([id, hash]) => [hash.toLowerCase(), id])
 );
 
 function showAppPage(pageId) {
@@ -5141,23 +5141,28 @@ loadMenuCollectionMeta();
 window._deepLinkIntent = null;
 
 (function applyDeepLink() {
+(function applyDeepLink() {
   const raw = location.hash.replace('#', '').trim();
   const parts = raw.split('-');
   const pageHash = parts[0].toLowerCase();
+  const subView = parts[1] || '';
+  const extraId = parts[2] || '';
+
   const targetPage = HASH_PAGE_MAP[pageHash] || 'menuPage';
   showAppPage(targetPage);
 
-  // Merc sub-view
-  if (targetPage === 'mercPage' && parts[1]) {
-    requestAnimationFrame(() => { if (typeof mercSetMobileView === 'function') mercSetMobileView(parts[1]); });
+  if (targetPage === 'mercPage' && subView) {
+    requestAnimationFrame(() => {
+      if (typeof mercSetMobileView === 'function') mercSetMobileView(subView);
+    });
   }
 
-  // Stocker l'intention inventory/blend
-  if (targetPage === 'inventoryPage' && parts[1] && parts[2]) {
-    window._deepLinkIntent = { page: 'inventory', type: parts[1], id: parts[2] };
+  if (targetPage === 'blendPage' && subView === 'blend' && extraId) {
+    window._deepLinkIntent = { page: 'blend', id: extraId };
   }
-  if (targetPage === 'blendPage' && parts[1] === 'blend' && parts[2]) {
-    window._deepLinkIntent = { page: 'blend', id: parts[2] };
+
+  if (targetPage === 'inventoryPage' && subView && extraId) {
+    window._deepLinkIntent = { page: 'inventory', type: subView, id: extraId };
   }
 })();
 </script>
