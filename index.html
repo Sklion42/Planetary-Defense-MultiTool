@@ -2874,7 +2874,7 @@
   }
   .blend-picker-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
     gap: 8px;
   }
   .blend-picker-card {
@@ -2912,7 +2912,7 @@
     padding: 5px 6px 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
     font-size: 11px;
     color: var(--text-mid);
   }
@@ -3588,12 +3588,14 @@
         <select id="blendReadyFilter" onchange="blendApplyFilters()">
           <option value="all">All blends</option>
           <option value="ready">Ready only</option>
-          <option value="missing">Missing only</option>
+          <option value="one-missing">One missing only</option>
+          <option value="multiple-missing">More than one missing</option>
         </select>
         <select id="blendSortSelect" onchange="blendApplyFilters()">
-          <option value="name">Name</option>
-          <option value="ready">Ready first</option>
           <option value="id" selected>Blend ID</option>
+          <option value="ready">Ready first</option>
+          <option value="name">Name</option>
+          <option value="rarity">Rarity</option>
         </select>
       </div>
     </div>
@@ -6081,6 +6083,11 @@ window._deepLinkIntent = null;
     return blendIpfs(data.img || data.image || data.Image || '');
   }
 
+  function blendTemplateRarity(template) {
+    const data = template?.immutable_data || {};
+    return String(data.rarity || data.Rarity || '').trim().toLowerCase();
+  }
+
   function blendAssetMint(asset) {
     const mint = Number(asset?.template_mint || 0);
     return Number.isFinite(mint) ? mint : 0;
@@ -6191,10 +6198,18 @@ window._deepLinkIntent = null;
           templateId,
           percent,
           name: template ? blendTemplateName(template) : `Template #${templateId}`,
-          image: template ? blendTemplateImage(template) : ''
+          image: template ? blendTemplateImage(template) : '',
+          rarity: template ? blendTemplateRarity(template) : ''
         };
       })
       .sort((a, b) => b.percent - a.percent || a.name.localeCompare(b.name));
+  }
+
+  function blendBestOutcomeRarityRank(row) {
+    const ranks = blendPossibleOutcomes(row)
+      .map(outcome => RARITY_ORDER[outcome.rarity] ?? RARITY_ORDER[''])
+      .filter(rank => Number.isFinite(rank));
+    return ranks.length ? Math.min(...ranks) : RARITY_ORDER[''];
   }
 
   function blendHasMultiplePossibleOutcomes(row) {
@@ -6387,6 +6402,21 @@ if (intent?.page === 'blend') {
     blendApplyFilters();
   }
 
+  function blendMissingCount(availability) {
+    return (availability.missing || []).reduce((total, item) => {
+      const need = Math.max(0, Number(item.need || 0));
+      const have = Math.max(0, Number(item.have || 0));
+      return total + Math.max(1, need - have);
+    }, 0);
+  }
+
+  function blendMatchesReadyFilter(availability, readyFilter) {
+    if (readyFilter === 'ready') return availability.maxCopies >= 1;
+    if (readyFilter === 'one-missing') return availability.maxCopies < 1 && blendMissingCount(availability) === 1;
+    if (readyFilter === 'multiple-missing') return availability.maxCopies < 1 && blendMissingCount(availability) > 1;
+    return true;
+  }
+
   function blendApplyFilters() {
     const query = (document.getElementById('blendSearchInput')?.value || '').trim().toLowerCase();
     const readyFilter = document.getElementById('blendReadyFilter')?.value || 'all';
@@ -6396,14 +6426,17 @@ if (intent?.page === 'blend') {
       if (currentBlendCategory !== 'all' && parts.main !== currentBlendCategory) return false;
       if (query && !`${blendName(row)} ${parts.raw} ${row.blend_id}`.toLowerCase().includes(query)) return false;
       const availability = blendGetAvailability(row, 1);
-      if (readyFilter === 'ready' && availability.maxCopies < 1) return false;
-      if (readyFilter === 'missing' && availability.maxCopies > 0) return false;
+      if (!blendMatchesReadyFilter(availability, readyFilter)) return false;
       return true;
     });
 
     rows.sort((a, b) => {
       if (sort === 'ready') {
         const diff = blendGetAvailability(b, 1).maxCopies - blendGetAvailability(a, 1).maxCopies;
+        if (diff) return diff;
+      }
+      if (sort === 'rarity') {
+        const diff = blendBestOutcomeRarityRank(a) - blendBestOutcomeRarityRank(b);
         if (diff) return diff;
       }
       if (sort === 'name') return blendName(a).localeCompare(blendName(b));
