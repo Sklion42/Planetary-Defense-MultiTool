@@ -6872,7 +6872,7 @@ loadMenuCollectionMeta();
       <div class="blend-action-box">
         <div>
           <label for="blendQtyInput">Quantity · max ${availability.maxCopies}</label>
-          <input id="blendQtyInput" type="number" min="1" max="${Math.max(1, availability.maxCopies)}" value="${Math.min(desiredQty, Math.max(1, availability.maxCopies))}" oninput="blendRenderSelected()">
+          <input id="blendQtyInput" type="number" min="1" max="${Math.max(1, availability.maxCopies)}" value="${Math.min(desiredQty, Math.max(1, availability.maxCopies))}" onchange="blendRenderSelected()" onblur="blendRenderSelected()">
         </div>
         ${canBlend
           ? `<button class="market-link" type="button" onclick="blendExecuteSelected()">Blend</button>`
@@ -6972,7 +6972,7 @@ loadMenuCollectionMeta();
       <div class="blend-action-box">
         <div>
           <label for="blendQtyInput">Quantity · max ${availability.maxCopies}</label>
-          <input id="blendQtyInput" type="number" min="1" max="${Math.max(1, availability.maxCopies)}" value="${Math.min(desiredQty, Math.max(1, availability.maxCopies))}" oninput="blendRenderSelected()">
+          <input id="blendQtyInput" type="number" min="1" max="${Math.max(1, availability.maxCopies)}" value="${Math.min(desiredQty, Math.max(1, availability.maxCopies))}" onchange="blendRenderSelected()" onblur="blendRenderSelected()">
         </div>
         ${canBlend
           ? `<button class="market-link" type="button" onclick="blendExecuteSelected()">Blend</button>`
@@ -7058,7 +7058,7 @@ loadMenuCollectionMeta();
           <div>
             <label for="blendQtyInput">Quantity - max ${availability.maxCopies}</label>
             <div class="blend-qty-control">
-              <input id="blendQtyInput" type="number" min="1" max="${maxInput}" value="${inputValue}" oninput="blendRenderSelected()">
+              <input id="blendQtyInput" type="number" min="1" max="${maxInput}" value="${inputValue}" onchange="blendRenderSelected()" onblur="blendRenderSelected()">
               <div class="blend-qty-stepper">
                 <button class="blend-qty-step is-up" type="button" aria-label="Increase quantity" onclick="blendAdjustQty(1)"></button>
                 <button class="blend-qty-step is-down" type="button" aria-label="Decrease quantity" onclick="blendAdjustQty(-1)"></button>
