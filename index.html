@@ -387,7 +387,7 @@
   /* ── LAYOUT ── */
   .layout {
     display: grid;
-    grid-template-columns: 300px 1fr 420px;
+    grid-template-columns: minmax(260px, 0.6fr) minmax(420px, 1.5fr) minmax(300px, 0.8fr);
     grid-template-areas: "inventory preview details";
     gap: 8px;
     flex: 1;       /* prend toute la hauteur restante */
@@ -757,8 +757,8 @@
 
   @media (max-width: 1230px) {
     .layout {
-      grid-template-columns: 300px minmax(0, 1fr);
-      grid-template-rows: minmax(0, 1.6fr) minmax(0, 0.9fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
       grid-template-areas:
         "inventory preview"
         "inventory details";
@@ -2497,7 +2497,7 @@
     min-height: 0;
     flex: 1 1 auto;
     display: grid;
-    grid-template-columns: minmax(260px, 1fr) minmax(420px, 1.5fr) minmax(300px, 0.8fr);
+    grid-template-columns: minmax(260px, 0.6fr) minmax(420px, 1.5fr) minmax(300px, 0.8fr);
     gap: 10px;
     overflow: hidden;
   }
@@ -3365,7 +3365,7 @@
   }
   @media (max-width: 1230px) {
     .blend-layout {
-      grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1fr);
+      grid-template-columns: minmax(260px, 1fr) minmax(0, 1fr);
       grid-template-rows: minmax(0, 2fr) minmax(0, 0.95fr);
       grid-template-areas:
         "organizer recipe"
