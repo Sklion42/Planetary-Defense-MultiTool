@@ -4875,7 +4875,7 @@ function renderDetails(a) {
   let html = '';
 
   if (stats.length) {
-    html += `<div class="stats-block"><div class="stats-grid">`;
+    html += `<div class="stats-block"><functionts-grid">`;
     stats.forEach(({label,icon,val}) => {
       html += `<div class="stat-row">
         <div class="stat-icon">${icon}</div>
@@ -5140,7 +5140,7 @@ loadMenuCollectionMeta();
 
 // ── Deep link : lire le hash de l'URL au chargement
 window._deepLinkIntent = null;
-
+  
 (function applyDeepLink() {
   const raw = location.hash.replace('#', '').trim();
   const parts = raw.split('-');
@@ -5151,23 +5151,31 @@ window._deepLinkIntent = null;
   const targetPage = HASH_PAGE_MAP[pageHash] || 'menuPage';
   showAppPage(targetPage);
 
+  // Merc : sous-vue explicite dans le lien
   if (targetPage === 'mercPage' && subView) {
     requestAnimationFrame(() => {
       if (typeof mercSetMobileView === 'function') mercSetMobileView(subView);
     });
   }
 
+  // Blend : si un blend_id est spécifié → intent + onglet Recipe sur mobile
   if (targetPage === 'blendPage' && subView === 'blend' && extraId) {
     window._deepLinkIntent = { page: 'blend', id: extraId };
+    requestAnimationFrame(() => {
+      if (typeof blendSetMobileView === 'function') blendSetMobileView('recipe');
+    });
   }
-  
-if (targetPage === 'inventoryPage' && subView === 'template' && extraId) {
-  window._deepLinkIntent = { page: 'inventory', type: 'template', id: extraId };
-}
+
+  // Inventory : si un template est spécifié → intent + onglet preview sur mobile
+  if (targetPage === 'inventoryPage' && subView === 'template' && extraId) {
+    window._deepLinkIntent = { page: 'inventory', type: 'template', id: extraId };
+    requestAnimationFrame(() => {
+      if (typeof setMobileView === 'function') setMobileView('preview');
+    });
+  }
 })();
+  
 </script>
-
-
 <script>
 (function() {
   const TLM_CONTRACT = 'alien.worlds';
