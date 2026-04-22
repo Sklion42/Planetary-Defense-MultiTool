@@ -2639,14 +2639,17 @@
   .blend-accordion-items.is-collapsed { display: none; }
   .blend-list::-webkit-scrollbar,
   .blend-category-list::-webkit-scrollbar,
+  .blend-recipe-main::-webkit-scrollbar,
   .blend-preview-body::-webkit-scrollbar,
   .blend-details-scroll::-webkit-scrollbar { width: 4px; }
   .blend-list::-webkit-scrollbar-track,
   .blend-category-list::-webkit-scrollbar-track,
+  .blend-recipe-main::-webkit-scrollbar-track,
   .blend-preview-body::-webkit-scrollbar-track,
   .blend-details-scroll::-webkit-scrollbar-track { background: transparent; }
   .blend-list::-webkit-scrollbar-thumb,
   .blend-category-list::-webkit-scrollbar-thumb,
+  .blend-recipe-main::-webkit-scrollbar-thumb,
   .blend-preview-body::-webkit-scrollbar-thumb,
   .blend-details-scroll::-webkit-scrollbar-thumb { background: var(--red-dim); }
   .blend-row {
@@ -2724,10 +2727,21 @@
   .blend-preview-body {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 12px;
+    align-items: stretch;
+    gap: 10px;
+    flex: 1 1 auto;
     min-height: 0;
-    overflow-y: auto;
+    overflow: hidden;
+    padding: 12px;
+  }
+  .blend-recipe-main {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: overlay;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .blend-recipe-list {
     width: 100%;
@@ -2742,6 +2756,14 @@
     gap: 12px;
     margin-top: auto;
     flex-shrink: 0;
+  }
+  .blend-recipe-footer {
+    width: 100%;
+    flex: 0 0 auto;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
   .blend-ingredient {
     display: flex;
@@ -2852,21 +2874,32 @@
   }
   .blend-recipe-list.is-compact {
     display: grid;
-    grid-template-columns: repeat(auto-fit, 112px);
-    gap: 8px;
-    align-items: center;
+    grid-template-columns: minmax(0, min(100%, 220px));
+    grid-template-rows: repeat(var(--ingredient-rows, 1), minmax(1, 1fr));
+    gap: clamp(6px, 1.2vh, 10px);
+    align-items: stretch;
+    align-content: space-around;
     justify-content: center;
-    justify-items: center;
+    justify-items: stretch;
+    height: 100%;
+    min-height: 0;
+  }
+  .blend-recipe-list.is-compact.is-multi {
+    grid-template-columns: repeat(2, minmax(0, min(46%, 220px)));
   }
   .blend-ingredient-card {
-    width: 112px;
+    width: 100%;
     min-width: 0;
+    min-height: 150px;
+    overflow: hidden;
     border: 1px solid rgba(34, 211, 255, 0.12);
     background: rgba(7, 12, 16, 0.72);
     color: var(--text);
     padding: 7px;
     cursor: pointer;
     text-align: center;
+    display: flex;
+    flex-direction: column;
     transition: background .15s, border-color .15s, box-shadow .15s;
   }
   .blend-ingredient-card:hover {
@@ -2879,13 +2912,14 @@
   .blend-ingredient-img-wrap {
     position: relative;
     width: 100%;
+    flex: 1 1 auto;
     aspect-ratio: 1 / 1;
     overflow: hidden;
   }
   .blend-ingredient-img-wrap img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: none;
     display: block;
   }
   .blend-ingredient-placeholder {
@@ -2910,8 +2944,10 @@
     font-size: 11px;
   }
   .blend-ingredient-card-title {
-    margin-top: 6px;
-    height: 27px;
+    flex: 0 0 auto;
+    margin-top: 5px;
+    min-height: 0;
+    max-height: 26px;
     color: var(--text);
     font-size: 11px;
     font-weight: 600;
@@ -2928,8 +2964,9 @@
     font-size: 10px;
   }
   .blend-ingredient-card-state {
+    flex: 0 0 auto;
     margin-top: 2px;
-    min-height: 12px;
+    min-height: 0;
     color: var(--text-dim);
     font-family: 'Share Tech Mono', monospace;
     font-size: 10px;
@@ -3204,10 +3241,10 @@
   .blend-action-box {
     width: 100%;
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 15px;
-    align-items: stretch;
-    margin-top: auto;
+    grid-template-columns: minmax(0, 1fr) minmax(118px, 0.58fr);
+    gap: 10px;
+    align-items: end;
+    margin-top: 0;
     padding: 10px;
     background: rgba(12, 18, 24, 0.86);
   }
@@ -3228,6 +3265,10 @@
   .blend-action-box .market-link,
   .blend-action-box .btn-load {
     width: 100%;
+    min-height: 39px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .blend-action-box button.market-link {
     border: 0;
@@ -3396,11 +3437,11 @@
   }
   @media (max-width: 1230px) {
     .blend-layout {
-      grid-template-columns: minmax(260px, 1fr) minmax(0, 1fr);
-      grid-template-rows: minmax(0, 2fr) minmax(0, 0.95fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
       grid-template-areas:
         "organizer recipe"
-        "details recipe";
+        "organizer details";
     }
     .blend-list-panel {
       grid-area: organizer;
@@ -3451,23 +3492,26 @@
       width: min(85%, 420px);
       max-height: 420px;
     }
-    .blend-recipe-list.is-compact {
-      grid-template-columns: repeat(2, 112px);
+    .blend-preview-body {
+      padding: 8px;
       gap: 8px;
     }
-    .blend-recipe-list.is-compact.is-short {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
+    .blend-recipe-list.is-compact {
+      grid-template-columns: minmax(0, min(100%, 100%));
+      grid-template-rows: repeat(var(--ingredient-rows, 1), minmax(0, 1fr));
+      gap: 8px;
+    }
+    .blend-recipe-list.is-compact.is-multi {
+      grid-template-columns: repeat(2, minmax(0, min(50%, 100%)));
     }
     .blend-ingredient-card {
-      width: 112px;
+      width: 100%;
       padding: 7px;
     }
-    .blend-recipe-list.is-compact.is-short .blend-ingredient-card {
-      width: min(112px, calc((100vw - 40px) / 3));
+    .blend-action-box {
+      grid-template-columns: minmax(0, 1fr) minmax(104px, 0.55fr);
+      gap: 8px;
+      padding: 8px;
     }
   }
 
@@ -7094,8 +7138,6 @@ if (intent?.page === 'blend') {
     const qtyInput = document.getElementById('blendQtyInput');
     const desiredQty = Math.max(1, Number(qtyInput?.value || 1));
     const availability = blendGetAvailability(selectedBlend, desiredQty);
-    const img = blendImage(selectedBlend);
-    const name = blendName(selectedBlend);
     const preview = document.getElementById('blendPreviewArea');
     const canBlend = availability.maxCopies > 0 && desiredQty <= availability.maxCopies;
     const recipeHtml = availability.requirements.map(req => {
@@ -7181,8 +7223,6 @@ if (intent?.page === 'blend') {
     const qtyInput = document.getElementById('blendQtyInput');
     const desiredQty = Math.max(1, Number(qtyInput?.value || 1));
     const availability = blendGetAvailability(selectedBlend, desiredQty);
-    const img = blendImage(selectedBlend);
-    const name = blendName(selectedBlend);
     const preview = document.getElementById('blendPreviewArea');
     const canBlend = availability.maxCopies > 0 && desiredQty <= availability.maxCopies && !availability.missing.length;
     const slotsByRequirement = new Map();
@@ -7278,8 +7318,6 @@ if (intent?.page === 'blend') {
     const qtyInput = document.getElementById('blendQtyInput');
     const desiredQty = Math.max(1, Number(qtyInput?.value || 1));
     const availability = blendGetAvailability(selectedBlend, desiredQty);
-    const img = blendImage(selectedBlend);
-    const name = blendName(selectedBlend);
     const preview = document.getElementById('blendPreviewArea');
     const canBlend = availability.maxCopies > 0 && desiredQty <= availability.maxCopies && !availability.missing.length;
     const recipeHtml = availability.requirements.map((requirement, reqIndex) => {
@@ -7289,15 +7327,17 @@ if (intent?.page === 'blend') {
     const maxInput = Math.max(1, availability.maxCopies);
     const inputValue = Math.min(desiredQty, maxInput);
     const ingredientCount = availability.requirements.length;
-    const recipeListClass = `blend-recipe-list is-compact${ingredientCount > 0 && ingredientCount < 4 ? ' is-short' : ''}`;
+    const ingredientRows = Math.max(1, Math.ceil(ingredientCount / 2));
+    const recipeListClass = `blend-recipe-list is-compact${ingredientCount > 1 ? ' is-multi' : ''}`;
     const outcomesButton = blendHasMultiplePossibleOutcomes(selectedBlend)
       ? '<div class="blend-recipe-tools"><button class="blend-outcomes-btn" type="button" onclick="blendOpenOutcomesModal()">View Possible Results</button></div>'
       : '';
 
     preview.innerHTML = `
-      ${img ? `<img class="blend-card-image" src="${blendEscape(img)}" alt="${blendEscape(name)}">` : '<div class="empty-card"><div class="icon">BLD</div><div>No recipe image</div></div>'}
-      <div class="blend-recipe-bottom">
-        <div class="${recipeListClass}">${recipeHtml || '<div class="status-msg">No NFT ingredient listed.</div>'}</div>
+      <div class="blend-recipe-main">
+        <div class="${recipeListClass}" style="--ingredient-rows:${ingredientRows}">${recipeHtml || '<div class="status-msg">No NFT ingredient listed.</div>'}</div>
+      </div>
+      <div class="blend-recipe-footer">
         ${outcomesButton}
         <div class="blend-action-box">
           <div>
