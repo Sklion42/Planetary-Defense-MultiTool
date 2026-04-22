@@ -6135,9 +6135,11 @@ window._deepLinkIntent = null;
   const BLEND_SCAN_LOWER_BOUND = '40000';
   const BLEND_CACHE_KEY = `pdnft:blends:${COLLECTION}:v1`;
   const BLEND_RPC_ENDPOINTS = [
-    WAX_RPC_URL,
+    'https://wax.cryptolions.io',
     'https://wax.eosrio.io',
-    'https://wax.eosphere.io'
+    'https://api.waxsweden.org',
+    'https://wax.eosphere.io',
+    WAX_RPC_URL
   ];
   let blendRows = [];
   let blendFilteredRows = [];
@@ -7661,6 +7663,10 @@ if (intent?.page === 'blend') {
     if (preview) preview.innerHTML = `<div class="empty-card"><div class="icon">B</div><div>${blendEscape(text)}</div></div>`;
   }
 
+  function isBlendPageActive() {
+    return document.getElementById(BLEND_PAGE_ID)?.classList.contains('is-active');
+  }
+
   function blendSelectBlend(blendId, fromUser = false) {
   selectedBlend = blendRows.find(row => String(row.blend_id) === String(blendId)) || null;
   blendManualSelections = {};   // reset aussi les choix manuels
@@ -7673,7 +7679,7 @@ if (intent?.page === 'blend') {
     blendSetMobileView('recipe');
   }
   // ── Sync URL
-  if (selectedBlend) {
+  if (fromUser && selectedBlend && isBlendPageActive()) {
     history.replaceState(null, '', `#blendOrganizer-blend-${selectedBlend.blend_id}`);
   }
 }
@@ -7687,7 +7693,7 @@ if (intent?.page === 'blend') {
     const next = allowed.includes(view) ? view : 'organizer';
     blendMobileView = next;
     document.body.classList.remove('blend-mobile-view-organizer', 'blend-mobile-view-recipe', 'blend-mobile-view-details');
-    if (isBlendMobileMode() && document.getElementById(BLEND_PAGE_ID)?.classList.contains('is-active')) {
+    if (isBlendMobileMode() && isBlendPageActive()) {
       document.body.classList.add(`blend-mobile-view-${next}`);
     }
     document.querySelectorAll('#blendMobileDock .mobile-dock-btn').forEach(btn => {
@@ -7696,13 +7702,19 @@ if (intent?.page === 'blend') {
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
     // ── Sync URL
-  const blendSuffix = selectedBlend ? `-blend-${selectedBlend.blend_id}` : '';
-  history.replaceState(null, '', `#blendOrganizer${blendSuffix}`);
+  if (isBlendPageActive()) {
+    const rawHash = location.hash.replace('#', '');
+    const hasSpecificBlendHash = /^blendOrganizer-blend-/i.test(rawHash);
+    const blendSuffix = hasSpecificBlendHash
+      ? (selectedBlend ? `-blend-${selectedBlend.blend_id}` : rawHash.slice('blendOrganizer'.length))
+      : '';
+    history.replaceState(null, '', `#blendOrganizer${blendSuffix}`);
+  }
   }
 
   function blendSyncMobileState() {
     document.body.classList.remove('blend-mobile-view-organizer', 'blend-mobile-view-recipe', 'blend-mobile-view-details');
-    if (isBlendMobileMode() && document.getElementById(BLEND_PAGE_ID)?.classList.contains('is-active')) {
+    if (isBlendMobileMode() && isBlendPageActive()) {
       blendSetMobileView(blendMobileView || 'organizer');
     }
   }
@@ -8183,6 +8195,10 @@ if (intent?.page === 'blend') {
       document.body.classList.remove('blend-mobile-view-organizer', 'blend-mobile-view-recipe', 'blend-mobile-view-details');
     }
   };
+
+  if (isBlendPageActive()) {
+    requestAnimationFrame(() => blendHandlePageEnter());
+  }
 
   const previousUpdateWalletUi = window.updateWalletUi;
   window.updateWalletUi = function() {
