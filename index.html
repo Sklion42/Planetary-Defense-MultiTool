@@ -475,6 +475,38 @@
     text-transform: uppercase;
     flex-shrink: 0;
   }
+  .panel-title.has-panel-sync {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 34px;
+  }
+  .panel-sync-btn {
+    display: none;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text);
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+ 
+  .panel-sync-btn:disabled {
+    opacity: 0.5;
+    cursor: wait;
+    box-shadow: none;
+  }
 
   /* ── LEFT ── */
   .inv-categories { flex: 0 0 auto; border-bottom: 1px solid var(--border); overflow: hidden; }
@@ -966,7 +998,11 @@
   }
   .market-link {
     width: 100%;
-    padding: 10px 0;
+    min-height: 26px;
+    padding: 6px 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     font-family: 'Orbitron', monospace;
     font-size: 10px;
     font-weight: 700;
@@ -1582,6 +1618,10 @@
     .market-panel .panel-title {
       position: sticky;
       top: 0;
+      justify-content: left;
+    }
+    .panel-sync-btn {
+      display: inline-flex;
     }
     .inventory-panel .inv-categories,
     .inventory-panel .item-list,
@@ -1842,6 +1882,11 @@
     align-items: flex-start;
     flex-shrink: 0;
   }
+  .hub-sync-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
   .hub-back-btn {
     background: var(--panel2);
     border: 1px solid var(--red-dim);
@@ -1860,6 +1905,12 @@
     box-shadow: 0 0 14px rgba(60, 225, 231, 0.24);
     border-color: rgba(60, 168, 231, 0.5);
     transform: translateY(-1px);
+  }
+  .hub-back-btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+    transform: none;
+    box-shadow: none;
   }
   @media (max-width: 700px) {
     .app-page { padding: 8px; }
@@ -3247,7 +3298,7 @@
   .blend-action-box {
     width: 100%;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(118px, 0.58fr);
+    grid-template-columns: repeat(1, minmax(0, 1fr));
     gap: 10px;
     align-items: end;
     margin-top: 0;
@@ -3271,7 +3322,7 @@
   .blend-action-box .market-link,
   .blend-action-box .btn-load {
     width: 100%;
-    min-height: 39px;
+    min-height: 26px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3515,7 +3566,7 @@
       padding: 7px;
     }
     .blend-action-box {
-      grid-template-columns: minmax(0, 1fr) minmax(104px, 0.55fr);
+      grid-template-columns: repeat(1, 1fr);
       gap: 8px;
       padding: 8px;
     }
@@ -3590,13 +3641,14 @@
   </div>
   <div class="hub-nav-bar">
     <button class="hub-back-btn" type="button" onclick="showAppPage('menuPage')">← Menu</button>
+    <button class="hub-back-btn hub-sync-btn" id="inventorySyncBtn" type="button" onclick="syncWalletData()">Sync Data</button>
   </div>
   <div class="layout">
     <div aria-hidden="true" class="mobile-nav-backdrop" id="mobileNavBackdrop"></div>
     <!-- LEFT -->
     <div class="panel inventory-panel" id="inventoryPanel">
       <button aria-controls="inventoryPanel" aria-expanded="false" class="mobile-menu-tab" id="mobileMenuBtn" type="button"><span class="tab-chevron">❯</span><span class="tab-label">INV</span></button>
-      <div class="panel-title">Inventory</div>
+      <div class="panel-title has-panel-sync">Inventory<button class="panel-sync-btn" id="inventoryPanelSyncBtn" type="button" onclick="syncWalletData()" aria-label="Sync inventory data" title="Sync data">&#8635;</button></div>
       <div class="inv-categories" id="schemaList">
         <div class="cat-item active" data-schema="all" onclick="filterSchema('all',this)">
         <span class="cat-dot"></span> All NFTs
@@ -3682,10 +3734,11 @@
   </div>
   <div class="hub-nav-bar">
     <button class="hub-back-btn" type="button" onclick="showAppPage('menuPage')">← Menu</button>
+    <button class="hub-back-btn hub-sync-btn" id="blendSyncBtn" type="button" onclick="syncWalletData()">Sync Data</button>
   </div>
   <div class="blend-layout">
     <div class="panel blend-list-panel">
-      <div class="panel-title">Blend Organizer</div>
+      <div class="panel-title has-panel-sync">Blend Organizer<button class="panel-sync-btn" id="blendPanelSyncBtn" type="button" onclick="syncWalletData()" aria-label="Sync blend inventory data" title="Sync data">&#8635;</button></div>
       <div class="blend-category-list inv-categories" id="blendCategoryList">
         <div class="status-msg">Load blends</div>
       </div>
@@ -3768,11 +3821,12 @@
 </div>
 <div class="hub-nav-bar">
     <button class="hub-back-btn" type="button" onclick="showAppPage('menuPage')">← Menu</button>
+    <button class="hub-back-btn hub-sync-btn" id="mercSyncBtn" type="button" onclick="mercSyncData()">Sync Data</button>
 </div>
 
 <div class="merc-layout">
     <div class="panel merc-account-panel">
-      <div class="panel-title">Account Status</div>
+      <div class="panel-title has-panel-sync">Account Status<button class="panel-sync-btn" id="mercPanelSyncBtn" type="button" onclick="mercSyncData()" aria-label="Sync mercenary data" title="Sync data">&#8635;</button></div>
       <div class="merc-scroll-block">
         <div class="merc-overview-grid">
           <div class="merc-stat-card">
@@ -4613,6 +4667,29 @@ async function loadCollectionTemplates() {
   return collectionTemplates;
 }
 
+async function fetchOwnedAssetsForWallet(wallet) {
+  const assets = [];
+  if (!wallet) return assets;
+  let page = 1;
+  let batch = [];
+  do {
+    const response = await fetchWithFallback(`/assets?collection_name=${COLLECTION}&owner=${wallet}&page=${page}&limit=500&order=desc&sort=asset_id`);
+    batch = Array.isArray(response?.data) ? response.data : [];
+    assets.push(...batch);
+    page += 1;
+  } while (batch.length === 500);
+  return assets;
+}
+
+function mergeOwnedAssetsForSync(previousAssets, nextAssets) {
+  const merged = new Map();
+  [...previousAssets, ...nextAssets].forEach((asset, index) => {
+    const key = asset?.asset_id ? `asset:${asset.asset_id}` : `fallback:${getTemplateId(asset) || index}`;
+    merged.set(key, asset);
+  });
+  return [...merged.values()];
+}
+
 // ── LOAD ─────────────────────────────────────────────────────
 async function loadInventory() {
   const wallet = getActiveWallet();
@@ -4646,13 +4723,7 @@ async function loadInventory() {
     // ── Phase 2 : si wallet connecté, charger les owned assets
     if (wallet) {
       setItemList('<div class="status-msg"><span class="spinner"></span>Loading your NFTs…</div>');
-      let page = 1, batch;
-      do {
-        const j = await fetchWithFallback(`/assets?collection_name=${COLLECTION}&owner=${wallet}&page=${page}&limit=500&order=desc&sort=asset_id`);
-        batch = Array.isArray(j?.data) ? j.data : [];
-        ownedAssets = ownedAssets.concat(batch);
-        page++;
-      } while (batch.length === 500);
+      ownedAssets = await fetchOwnedAssetsForWallet(wallet);
 
       if (loadInventory.requestId !== currentRequest) return;
 
@@ -4676,6 +4747,110 @@ async function loadInventory() {
       intent.type === 'template' ? String(getTemplateId(a)) === intent.id : false
     );
     if (match) selectItem(match, null);
+  }
+}
+
+let walletSyncInProgress = false;
+
+function setWalletSyncUi(isSyncing) {
+  document.querySelectorAll('#inventorySyncBtn, #blendSyncBtn, #inventoryPanelSyncBtn, #blendPanelSyncBtn').forEach(button => {
+    button.disabled = !!isSyncing;
+    if (button.classList.contains('hub-sync-btn')) {
+      button.textContent = isSyncing ? 'Syncing...' : 'Sync Data';
+    }
+  });
+}
+
+async function syncWalletData() {
+  if (walletSyncInProgress) return;
+  walletSyncInProgress = true;
+  setWalletSyncUi(true);
+
+  const previousState = {
+    allAssets: [...allAssets],
+    ownedAssets: [...ownedAssets],
+    filteredAssets: [...filteredAssets],
+    renderedAssets: [...renderedAssets],
+    schemaCounts: { ...schemaCounts },
+    collapsedTypeGroups: { ...collapsedTypeGroups },
+    selectedAsset,
+    currentSchema,
+    itemListHtml: document.getElementById('itemList')?.innerHTML || '',
+    schemaListHtml: document.getElementById('schemaList')?.innerHTML || '',
+    cardAreaHtml: document.getElementById('cardArea')?.innerHTML || '',
+    detailsAreaHtml: document.getElementById('detailsArea')?.innerHTML || '',
+    marketAreaHtml: document.getElementById('marketArea')?.innerHTML || ''
+  };
+
+  const restorePreviousInventoryView = () => {
+    allAssets = previousState.allAssets;
+    ownedAssets = previousState.ownedAssets;
+    filteredAssets = previousState.filteredAssets;
+    renderedAssets = previousState.renderedAssets;
+    schemaCounts = previousState.schemaCounts;
+    collapsedTypeGroups = previousState.collapsedTypeGroups;
+    selectedAsset = previousState.selectedAsset;
+    currentSchema = previousState.currentSchema;
+    const cardArea = document.getElementById('cardArea');
+    const detailsArea = document.getElementById('detailsArea');
+    const marketArea = document.getElementById('marketArea');
+    buildSchemaFilters(Object.keys(schemaCounts));
+    filterSchema(currentSchema || 'all', document.querySelector(`[data-schema="${currentSchema || 'all'}"]`) || document.querySelector('[data-schema="all"]'));
+    if (cardArea) cardArea.innerHTML = previousState.cardAreaHtml;
+    if (detailsArea) detailsArea.innerHTML = previousState.detailsAreaHtml;
+    if (marketArea) marketArea.innerHTML = previousState.marketAreaHtml;
+  };
+
+  try {
+    const wallet = getActiveWallet();
+    if (!wallet) {
+      console.warn('Sync skipped: no wallet connected.');
+      return;
+    }
+
+    await loadCollectionMeta();
+    await loadCollectionTemplates();
+
+    const selectedKey = selectedAsset ? getAssetKey(selectedAsset) : '';
+    const selectedTemplateId = selectedAsset ? String(getTemplateId(selectedAsset) || '') : '';
+    const nextOwnedAssets = await fetchOwnedAssetsForWallet(wallet);
+
+    ownedAssets = mergeOwnedAssetsForSync(ownedAssets, nextOwnedAssets);
+    allAssets = buildDisplayAssets(ownedAssets, collectionTemplates);
+    rebuildSchemaCounts(allAssets);
+
+    const nextSelected = (selectedKey || selectedTemplateId)
+      ? allAssets.find(asset => getAssetKey(asset) === selectedKey)
+        || allAssets.find(asset => selectedTemplateId && String(getTemplateId(asset) || '') === selectedTemplateId)
+      : null;
+    if (nextSelected) selectedAsset = nextSelected;
+
+    const nextSchema = currentSchema && (currentSchema === 'all' || schemaCounts[currentSchema]) ? currentSchema : 'all';
+    currentSchema = nextSchema;
+    buildSchemaFilters(Object.keys(schemaCounts));
+    filterSchema(nextSchema, document.querySelector(`[data-schema="${nextSchema}"]`) || document.querySelector('[data-schema="all"]'));
+
+    if (selectedKey || selectedTemplateId) {
+      if (nextSelected) {
+        renderCard(nextSelected);
+        renderDetails(nextSelected);
+      } else {
+        resetDetails();
+      }
+    }
+
+    if (typeof window.blendRefreshWalletData === 'function') {
+      window.blendRefreshWalletData();
+    } else {
+      if (typeof window.blendApplyFilters === 'function') window.blendApplyFilters();
+      if (typeof window.blendRenderSelected === 'function') window.blendRenderSelected();
+    }
+  } catch (error) {
+    console.error('Wallet data sync failed', error);
+    restorePreviousInventoryView();
+  } finally {
+    walletSyncInProgress = false;
+    setWalletSyncUi(false);
   }
 }
 
@@ -5628,8 +5803,7 @@ window._deepLinkIntent = null;
 
     if (!wallet) {
       balanceEl.textContent = '—';
-      mercRefreshMissionTelemetry();
-      return;
+      return mercRefreshMissionTelemetry();
     }
 
     balanceEl.textContent = 'Loading…';
@@ -5641,7 +5815,30 @@ window._deepLinkIntent = null;
       mercLog(`Balance error: ${error.message || error}`, 'err');
     }
 
-    mercRefreshMissionTelemetry();
+    return mercRefreshMissionTelemetry();
+  }
+
+  let mercSyncInProgress = false;
+
+  function mercSetSyncUi(isSyncing) {
+    document.querySelectorAll('#mercSyncBtn, #mercPanelSyncBtn').forEach(button => {
+      button.disabled = !!isSyncing;
+      if (button.classList.contains('hub-sync-btn')) {
+        button.textContent = isSyncing ? 'Syncing...' : 'Sync Data';
+      }
+    });
+  }
+
+  async function mercSyncData() {
+    if (mercSyncInProgress) return;
+    mercSyncInProgress = true;
+    mercSetSyncUi(true);
+    try {
+      await mercRefreshAccountState();
+    } finally {
+      mercSyncInProgress = false;
+      mercSetSyncUi(false);
+    }
   }
 
   async function mercGetSupporters(owner) {
@@ -6154,6 +6351,7 @@ window._deepLinkIntent = null;
   window.mercClearLog = mercClearLog;
   window.mercCopyAllAddresses = mercCopyAllAddresses;
   window.mercCopyAddress = mercCopyAddress;
+  window.mercSyncData = mercSyncData;
 
   window.addEventListener('resize', mercSyncMobileState);
 
@@ -8233,6 +8431,12 @@ if (intent?.page === 'blend') {
     showAppPage(BLEND_PAGE_ID);
   }
 
+  function blendRefreshWalletData() {
+    if (!blendLoaded) return;
+    blendApplyFilters();
+    if (selectedBlend) blendRenderSelected();
+  }
+
   const previousShowAppPage = window.showAppPage;
   window.showAppPage = function(pageId) {
     previousShowAppPage(pageId);
@@ -8260,6 +8464,7 @@ if (intent?.page === 'blend') {
   window.openBlendPage = openBlendPage;
   window.blendApplyFilters = blendApplyFilters;
   window.blendRenderSelected = blendRenderSelected;
+  window.blendRefreshWalletData = blendRefreshWalletData;
   window.blendExecuteSelected = blendExecuteSelected;
   window.blendToggleChoice = blendToggleChoice;
   window.blendChooseAsset = blendChooseAsset;
