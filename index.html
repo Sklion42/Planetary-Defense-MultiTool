@@ -801,7 +801,7 @@
     .nft-type { font-size: 10px; }
     .star-row { margin: 6px 0 2px; }
     .led-row { margin-top: 4px; }
-    .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .stat-row {
       padding: 6px 8px;
       border: 1px solid rgba(26, 41, 42, 0.55);
@@ -813,7 +813,7 @@
     .stat-label {
       min-width: 0;
       font-size: 11px;
-      white-space: nowrap;
+      white-space: normal;
       overflow: hidden;
       text-overflow: ellipsis;
     }
@@ -829,7 +829,7 @@
     .attr-chip { padding: 4px 6px; min-width: 0; }
     .attr-chip .v {
       font-size: 11px;
-      white-space: nowrap;
+      white-space: normal;
       overflow: hidden;
       text-overflow: ellipsis;
     }
@@ -1426,6 +1426,7 @@
     }
     .stats-grid {
       gap: 7px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .stat-row {
       border-radius: 14px;
@@ -3553,12 +3554,12 @@
       <div class="menu-panel-title">Navigation Hub</div>
       <div class="menu-wrap">
         <div class="menu-subtitle">Choose your next operational interface.</div>
-        <a class="menu-button" href="https://www.planetarydefense.io" target="_blank" rel="noopener">Planetary Defense</a>
-        <button class="menu-button" type="button" onclick="openInventoryPage()">Inventory</button>
-        <button class="menu-button" type="button" onclick="openMercPage()">Manage mercenaries</button>
+        <a class="menu-button" href="https://www.planetarydefense.io" target="_blank" rel="noopener">PLANETARY DEFENSE</a>
+        <button class="menu-button" type="button" onclick="openInventoryPage()">INVENTORY</button>
         <button class="menu-button" type="button" onclick="openBlendPage()">BLEND ORGANIZER</button>
+        <button class="menu-button" type="button" onclick="openMercPage()">MANAGE MERCENARIES</button>
         <button class="menu-button placeholder" type="button" disabled>DIVISION CALCULATOR</button>
-        <button class="menu-button placeholder" type="button" disabled>Smart Market</button>
+        <button class="menu-button placeholder" type="button" disabled>SMART MARKET</button>
         <a class="menu-button" href="https://naroncodex.app/" target="_blank" rel="noopener">Naron Codex<span class="menu-button-byline">by Shade</span></a>
       </div>
     </div>
