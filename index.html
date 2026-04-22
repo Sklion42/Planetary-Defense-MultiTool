@@ -825,7 +825,7 @@
     .desc-block { padding: 8px 12px; }
     .desc-text { font-size: 11px; line-height: 1.35; }
     .attrs-block { padding: 8px 12px; }
-    .attr-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .attr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
     .attr-chip { padding: 4px 6px; min-width: 0; }
     .attr-chip .v {
       font-size: 11px;
@@ -1032,7 +1032,7 @@
   }
   @media (max-width: 1230px) {
     .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .attr-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .attr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   }
   @media (max-width: 710px) {
     .page-merc .hub-nav-bar {
@@ -2081,6 +2081,11 @@
     padding: 8px;
     min-width: 0;
   }
+  .merc-mission-stats .merc-mission-stat:nth-child(1) { order: 5; }
+  .merc-mission-stats .merc-mission-stat:nth-child(2) { order: 3; }
+  .merc-mission-stats .merc-mission-stat:nth-child(3) { order: 4; }
+  .merc-mission-stats .merc-mission-stat:nth-child(4) { order: 1; }
+  .merc-mission-stats .merc-mission-stat:nth-child(5) { order: 2; }
   .merc-mission-stat-label {
     font-family: 'Orbitron', monospace;
     font-size: 8px;
@@ -5035,7 +5040,7 @@ function renderDetails(a) {
   let html = '';
 
   if (stats.length) {
-    html += `<div class="stats-block"><functionts-grid">`;
+    html += `<div class="stats-block"><div class="stats-grid">`;
     stats.forEach(({label,icon,val}) => {
       html += `<div class="stat-row">
         <div class="stat-icon">${icon}</div>
@@ -5499,11 +5504,12 @@ window._deepLinkIntent = null;
   }
 
   function mercFormatRewardValue(raw, suffix) {
+    if (raw === undefined || raw === null || raw === '') return '-';
     if (raw === undefined || raw === null || raw === '') return `— ${suffix}`;
     const numeric = parseFloat(String(raw).split(' ')[0]);
-    if (!Number.isFinite(numeric)) return String(raw);
-    const decimals = suffix === 'TLM' ? 4 : 0;
-    return `${mercFormatNumberUS(numeric, { decimals })} ${suffix}`;
+    if (!Number.isFinite(numeric)) return String(raw).replace(/\s*(TLM|Shards)\s*$/i, '');
+    const decimals = suffix === 'TLM' && numeric % 1 !== 0 ? 4 : 0;
+    return mercFormatNumberUS(numeric, { decimals });
   }
 
   function mercFormatMissionDate(timestamp) {
@@ -5559,11 +5565,11 @@ window._deepLinkIntent = null;
             <div class="merc-mission-stat-value">${mercFormatNumberUS(defense.defenseTarget)}</div>
           </div>
           <div class="merc-mission-stat">
-            <div class="merc-mission-stat-label">Reward · TLM</div>
+            <div class="merc-mission-stat-label">Shared Reward · TLM</div>
             <div class="merc-mission-stat-value">${mercFormatRewardValue(defense.defenseRewards, 'TLM')}</div>
           </div>
           <div class="merc-mission-stat">
-            <div class="merc-mission-stat-label">Reward · Shards</div>
+            <div class="merc-mission-stat-label">Shared Reward · Shards</div>
             <div class="merc-mission-stat-value">${mercFormatRewardValue(defense.defenseShards, 'Shards')}</div>
           </div>
           <div class="merc-mission-stat">
