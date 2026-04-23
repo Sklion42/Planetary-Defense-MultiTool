@@ -2902,7 +2902,7 @@ body {
     min-height: 0;
   }
   .blend-recipe-list.is-compact.is-multi {
-    grid-template-columns: repeat(2, minmax(0, min(50%, 280px)));
+    grid-template-columns: repeat(2, minmax(0, min(50%, 350px)));
   }
   .blend-ingredient-card {
     width: 100%;
