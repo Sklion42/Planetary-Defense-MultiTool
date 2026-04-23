@@ -2897,6 +2897,7 @@ body {
     grid-template-rows: repeat(var(--ingredient-rows, 1), minmax(1, 1fr));
     gap: clamp(6px, 1.2vh, 10px);
     align-content: center;
+    justify-content: center;
     height: 100%;
     min-height: 0;
   }
@@ -2906,8 +2907,6 @@ body {
   .blend-ingredient-card {
     width: 100%;
     min-width: 0;
-    min-height: 140px;
-    max-height: 160px;
     overflow: hidden;
     border: 1px solid rgba(34, 211, 255, 0.12);
     background: rgba(7, 12, 16, 0.72);
