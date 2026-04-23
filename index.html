@@ -4472,6 +4472,16 @@ window._deepLinkIntent = null;
     return document.getElementById(BLEND_PAGE_ID)?.classList.contains('is-active');
   }
 
+  function blendGetPreferredHashBlendId() {
+    const selectedId = selectedBlend?.blend_id ? String(selectedBlend.blend_id) : '';
+    if (selectedId) return selectedId;
+    const intentId = window._deepLinkIntent?.page === 'blend' ? String(window._deepLinkIntent.id || '') : '';
+    if (intentId) return intentId;
+    const rawHash = location.hash.replace('#', '');
+    const match = rawHash.match(/^blendOrganizer-blend-(.+)$/i);
+    return match ? String(match[1]) : '';
+  }
+
   function blendSelectBlend(blendId, fromUser = false) {
   selectedBlend = blendRows.find(row => String(row.blend_id) === String(blendId)) || null;
   blendManualSelections = {};   // reset aussi les choix manuels
@@ -4484,7 +4494,7 @@ window._deepLinkIntent = null;
     blendSetMobileView('recipe');
   }
   // ── Sync URL
-  if (fromUser && selectedBlend && isBlendPageActive()) {
+  if (selectedBlend && isBlendPageActive()) {
     history.replaceState(null, '', `#blendOrganizer-blend-${selectedBlend.blend_id}`);
   }
 }
@@ -4508,11 +4518,8 @@ window._deepLinkIntent = null;
     });
     // ── Sync URL
   if (isBlendPageActive()) {
-    const rawHash = location.hash.replace('#', '');
-    const hasSpecificBlendHash = /^blendOrganizer-blend-/i.test(rawHash);
-    const blendSuffix = hasSpecificBlendHash
-      ? (selectedBlend ? `-blend-${selectedBlend.blend_id}` : rawHash.slice('blendOrganizer'.length))
-      : '';
+    const blendId = blendGetPreferredHashBlendId();
+    const blendSuffix = blendId ? `-blend-${blendId}` : '';
     history.replaceState(null, '', `#blendOrganizer${blendSuffix}`);
   }
   }
@@ -4985,12 +4992,14 @@ window._deepLinkIntent = null;
   }
 
   function openBlendPage() {
-    if (window._deepLinkIntent?.view === 'recipe') {
-      blendSetMobileView('recipe');
-    } else {
-      blendSetMobileView('organizer');
-    }
     showAppPage(BLEND_PAGE_ID);
+    requestAnimationFrame(() => {
+      if (window._deepLinkIntent?.view === 'recipe') {
+        blendSetMobileView('recipe');
+      } else {
+        blendSetMobileView('organizer');
+      }
+    });
   }
 
   function blendRefreshWalletData() {
