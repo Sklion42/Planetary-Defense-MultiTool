@@ -3280,7 +3280,12 @@ window._deepLinkIntent = null;
     if (intent?.page === 'blend') {
       window._deepLinkIntent = null;
       const match = blendRows.find(r => String(r.blend_id) === intent.id);
-      if (match) blendSelectBlend(match.blend_id);
+      if (match) {
+        blendSelectBlend(match.blend_id);
+        if (intent.view === 'recipe' && isBlendMobileMode()) {
+          blendSetMobileView('recipe');
+        }
+      }
     }
     if (!selectedBlend) blendRenderEmptySelection();
   }
@@ -4992,13 +4997,11 @@ window._deepLinkIntent = null;
   }
 
   function openBlendPage() {
+    const requestedView = window._deepLinkIntent?.view === 'recipe' ? 'recipe' : 'organizer';
+    blendMobileView = requestedView;
     showAppPage(BLEND_PAGE_ID);
     requestAnimationFrame(() => {
-      if (window._deepLinkIntent?.view === 'recipe') {
-        blendSetMobileView('recipe');
-      } else {
-        blendSetMobileView('organizer');
-      }
+      blendSetMobileView(requestedView);
     });
   }
 
