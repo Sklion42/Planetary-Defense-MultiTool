@@ -2893,7 +2893,7 @@ body {
   }
   .blend-recipe-list.is-compact {
     display: grid;
-    grid-template-columns: minmax(0, min(100%, 280px));
+    grid-template-columns: minmax(0, min(100%, 500px));
     grid-template-rows: repeat(var(--ingredient-rows, 1), minmax(1, 1fr));
     gap: clamp(6px, 1.2vh, 10px);
     align-content: center;
