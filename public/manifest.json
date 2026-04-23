@@ -1,7 +1,7 @@
 {
-  "name": "Planetary Defense - Hub",
-  "short_name": "PD Hub",
-  "description": "WAX NFT Community Hub - Inventory, Blends, Market",
+  "name": "Planetary Defense - MultiTool",
+  "short_name": "MultiTool",
+  "description": "Planetary Defense - MultiTool - Inventory, Blends, Market and more.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
