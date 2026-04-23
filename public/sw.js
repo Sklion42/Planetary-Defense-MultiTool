@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pd-hub-v1';
+const CACHE_NAME = 'pd-multitool-v1';
 
 const PRECACHE = [
   '/',
