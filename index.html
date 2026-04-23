@@ -941,6 +941,52 @@ async function loadMarketPrice(asset, requestId) {
   }
 }
 
+async function loadBlendItCta(asset, requestId) {
+  const block = document.getElementById('blendItBlock');
+  const slot = document.getElementById('blendItCta');
+  if (!block || !slot) return;
+
+  const templateId = getTemplateId(asset);
+  if (!templateId || typeof window.findBlendMatchesForTemplateId !== 'function') {
+    block.hidden = true;
+    slot.innerHTML = '';
+    return;
+  }
+
+  try {
+    const matches = await window.findBlendMatchesForTemplateId(templateId);
+    const isCurrentAsset =
+      selectedAsset &&
+      getAssetKey(selectedAsset) === getAssetKey(asset) &&
+      activeDetailsRequest === requestId;
+
+    if (!isCurrentAsset) return;
+
+    if (!Array.isArray(matches) || !matches.length) {
+      block.hidden = true;
+      slot.innerHTML = '';
+      return;
+    }
+
+    const blendId = String(matches[0].blend_id || '');
+    block.hidden = false;
+    slot.innerHTML = '<button class="market-link" type="button">BLEND IT</button>';
+    const button = slot.querySelector('button');
+    if (button) {
+      button.addEventListener('click', () => {
+        window._deepLinkIntent = { page: 'blend', id: blendId, view: 'recipe' };
+        openBlendPage();
+      });
+    }
+  } catch (error) {
+    console.warn('Unable to resolve blend CTA', error);
+    if (selectedAsset && getAssetKey(selectedAsset) === getAssetKey(asset) && activeDetailsRequest === requestId) {
+      block.hidden = true;
+      slot.innerHTML = '';
+    }
+  }
+}
+
 function ipfsToHttp(value) {
   if (!value || typeof value !== 'string') return '';
   if (value.startsWith('http://') || value.startsWith('https://')) return value;
@@ -1748,9 +1794,11 @@ function renderDetails(a) {
     html += `<div class="status-msg" style="margin:20px 0">${a.isMissing ? 'No extra data for this collection entry.' : 'No extra data for this NFT.'}</div>`;
   }
 
+  html += '<div class="blend-it-block" id="blendItBlock" hidden><div id="blendItCta"></div></div>';
   document.getElementById('detailsArea').innerHTML = html;
   document.getElementById('marketArea').innerHTML = buildMarketSection(a);
   loadMarketPrice(a, requestId);
+  loadBlendItCta(a, requestId);
 }
 
 function resetDetails() {
@@ -1991,7 +2039,7 @@ window._deepLinkIntent = null;
 
   // Blend : si un blend_id est spécifié → intent + onglet Recipe sur mobile
   if (targetPage === 'blendPage' && subView === 'blend' && extraId) {
-    window._deepLinkIntent = { page: 'blend', id: extraId };
+    window._deepLinkIntent = { page: 'blend', id: extraId, view: 'recipe' };
     requestAnimationFrame(() => {
       if (typeof blendSetMobileView === 'function') blendSetMobileView('recipe');
     });
@@ -3133,6 +3181,12 @@ window._deepLinkIntent = null;
     return blendPossibleOutcomes(row).length > 1;
   }
 
+  function blendMatchesTemplateId(row, templateId) {
+    const target = String(templateId || '');
+    if (!target) return false;
+    return blendPossibleOutcomes(row).some(outcome => String(outcome.templateId || '') === target);
+  }
+
   function blendFormatPercent(value) {
     const number = Number(value || 0);
     if (!Number.isFinite(number)) return '-';
@@ -3166,6 +3220,19 @@ window._deepLinkIntent = null;
     );
     if (data) return data;
     throw new Error('All Blend RPC endpoints failed.');
+  }
+
+  async function blendFindMatchesForTemplateId(templateId) {
+    const target = String(templateId || '');
+    if (!target) return [];
+    if (!blendLoaded) {
+      try {
+        await blendLoadRows({ preferCache: true, silent: true });
+      } catch (_) {}
+    }
+    return blendRows
+      .filter(row => blendMatchesTemplateId(row, target))
+      .sort((a, b) => Number(a.blend_id) - Number(b.blend_id));
   }
 
   async function blendLoadTemplateMap() {
@@ -4918,7 +4985,11 @@ window._deepLinkIntent = null;
   }
 
   function openBlendPage() {
-    blendSetMobileView('organizer');
+    if (window._deepLinkIntent?.view === 'recipe') {
+      blendSetMobileView('recipe');
+    } else {
+      blendSetMobileView('organizer');
+    }
     showAppPage(BLEND_PAGE_ID);
   }
 
@@ -4957,6 +5028,7 @@ window._deepLinkIntent = null;
   window.blendRenderSelected = blendRenderSelected;
   window.blendRefreshWalletData = blendRefreshWalletData;
   window.blendExecuteSelected = blendExecuteSelected;
+  window.findBlendMatchesForTemplateId = blendFindMatchesForTemplateId;
   window.blendToggleChoice = blendToggleChoice;
   window.blendChooseAsset = blendChooseAsset;
   window.blendOpenIngredientPicker = blendOpenIngredientPicker;
