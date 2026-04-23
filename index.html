@@ -11,7 +11,7 @@
 
   <!-- Android / Chrome PWA -->
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="/manifest.json">
 
   <!-- iOS Safari Web App -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22,15 +22,18 @@
   <!-- <link rel="apple-touch-startup-image" href="/splash/splash-1170x2532.png" media="..."> -->
 
   <!-- Icône principale (iOS & Android fallback) -->
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+  <link rel="icon" type="image/png" sizes="96x96" href="/icons/favicon-96x96.png">
+  <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/web-app-manifest-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/web-app-manifest-512x512.png">
 
   <!-- SEO / social sharing -->
   <meta name="description" content="Planetary Defense — WAX NFT Community Hub">
   <meta property="og:title" content="Planetary Defense — Hub">
   <meta property="og:description" content="WAX NFT Community Hub — Inventory, Blends, Market">
-  <meta property="og:image" content="icons/icon-512.png">
+  <meta property="og:image" content="/icons/web-app-manifest-512x512.png">
   <meta property="og:type" content="website">
 
   <link href="https://fonts.googleapis.com" rel="preconnect"/>
@@ -151,8 +154,7 @@
       <div class="panel-title">Selected NFT</div>
       <div id="cardArea">
         <div class="empty-card">
-          <div class="icon">🛡</div>
-          <div>Select an NFT from your inventory</div>
+          <div class="status-msg" style="margin-top:40px">Select an NFT from your inventory</div>
         </div>
       </div>
     </div>
@@ -229,8 +231,7 @@
       <div class="panel-title">Recipe</div>
       <div class="blend-preview-body" id="blendPreviewArea">
         <div class="empty-card">
-          <div class="icon">B</div>
-          <div>Select a blend recipe</div>
+          <div class="status-msg" style="margin-top:40px">Select a blend in the organizer</div>
         </div>
       </div>
     </div>
@@ -515,7 +516,14 @@ let MARKET_API = MARKET_ENDPOINTS[0];
 const IPFS_GW = 'https://ipfs.io/ipfs/';
 const COLLECTION = 'planetdefnft';
 const MOBILE_MENU_BREAKPOINT = 710;
-const WAX_RPC_URL = 'https://wax.greymass.com';
+const WAX_RPC_ENDPOINTS = [
+  'https://wax.cryptolions.io',
+  'https://wax.greymass.com',
+  'https://wax.eosrio.io',
+  'https://api.waxsweden.org',
+  'https://wax.eosphere.io'
+];
+const WAX_RPC_URL = WAX_RPC_ENDPOINTS[0];
 const WAX_CHAIN_ID = '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4';
 const HYPERION_ENDPOINTS = [
   'https://wax.cryptolions.io/v2',
@@ -729,27 +737,46 @@ async function transactWithActiveWallet(transaction, options = {}) {
   return wharfWallet.transact(transaction, options);
 }
 
-async function fetchWithFallback(path) {
-  for (const base of ENDPOINTS) {
+async function fetchJsonFromEndpoints(endpoints, buildUrl, {
+  timeoutMs = 8000,
+  logLabel = 'Endpoint',
+  onSuccess = null,
+  requestInit = {},
+  acceptResponse = () => true
+} = {}) {
+  for (const base of endpoints) {
     try {
-      const r = await fetch(base + path, { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) continue;
-      API = base;
-      return await r.json();
-    } catch(e) { console.warn(`Endpoint failed: ${base}`, e.message); }
+      const response = await fetch(buildUrl(base), {
+        ...requestInit,
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      if (!response.ok) continue;
+      const data = await response.json();
+      if (!acceptResponse(data, base)) continue;
+      onSuccess?.(base);
+      return data;
+    } catch (error) {
+      console.warn(`${logLabel} failed: ${base}`, error.message || error);
+    }
   }
+  return null;
+}
+
+async function fetchWithFallback(path) {
+  const data = await fetchJsonFromEndpoints(ENDPOINTS, base => base + path, {
+    logLabel: 'Endpoint',
+    onSuccess: base => { API = base; }
+  });
+  if (data) return data;
   throw new Error('All API endpoints failed. Try opening via a local server (not file://).');
 }
 
 async function fetchMarketWithFallback(path) {
-  for (const base of MARKET_ENDPOINTS) {
-    try {
-      const r = await fetch(base + path, { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) continue;
-      MARKET_API = base;
-      return await r.json();
-    } catch(e) { console.warn(`Market endpoint failed: ${base}`, e.message); }
-  }
+  const data = await fetchJsonFromEndpoints(MARKET_ENDPOINTS, base => base + path, {
+    logLabel: 'Market endpoint',
+    onSuccess: base => { MARKET_API = base; }
+  });
+  if (data) return data;
   throw new Error('All market API endpoints failed.');
 }
 
@@ -1618,7 +1645,7 @@ function renderCard(a) {
     <div class="card-meta">${a.isMissing ? `Template #${getTemplateId(a) || '—'} &nbsp;|&nbsp; Not owned` : `Mint #${a.template_mint||'—'} &nbsp;|&nbsp; ID ${a.asset_id}`}</div>`;
 }
 function showEmptyCard() {
-  document.getElementById('cardArea').innerHTML=`<div class="empty-card"><div class="icon">🛡</div><div>Select an NFT from your inventory</div></div>`;
+  document.getElementById('cardArea').innerHTML=`<div class="empty-card"><div class="status-msg" style="margin-top:40px">Select an NFT from your inventory</div></div>`;
 }
 
 // ── DETAILS ──────────────────────────────────────────────────
@@ -2121,14 +2148,22 @@ window._deepLinkIntent = null;
 
   async function mercFetchBalance(account) {
     if (!account) return '—';
-    const res = await fetch(`${WAX_RPC_URL}/v1/chain/get_currency_balance`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: TLM_CONTRACT, account, symbol: TLM_SYMBOL })
-    });
-    if (!res.ok) throw new Error(`Balance RPC failed (${res.status})`);
-    const rows = await res.json();
-    return Array.isArray(rows) && rows.length ? rows[0] : `0.0000 ${TLM_SYMBOL}`;
+    const rows = await fetchJsonFromEndpoints(
+      WAX_RPC_ENDPOINTS,
+      base => `${base}/v1/chain/get_currency_balance`,
+      {
+        timeoutMs: 8000,
+        logLabel: 'Balance RPC endpoint',
+        requestInit: {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: TLM_CONTRACT, account, symbol: TLM_SYMBOL })
+        }
+      }
+    );
+    if (Array.isArray(rows) && rows.length) return rows[0];
+    if (rows) return `0.0000 ${TLM_SYMBOL}`;
+    throw new Error('All balance RPC endpoints failed.');
   }
 
   const MERC_MISSION_DATA_URL = '/api/mission-data';
@@ -3116,23 +3151,21 @@ window._deepLinkIntent = null;
   }
 
   async function blendFetchRpc(path, body) {
-    let lastError = null;
-    for (const endpoint of BLEND_RPC_ENDPOINTS) {
-      try {
-        const response = await fetch(`${endpoint}${path}`, {
+    const data = await fetchJsonFromEndpoints(
+      BLEND_RPC_ENDPOINTS,
+      endpoint => `${endpoint}${path}`,
+      {
+        timeoutMs: 12000,
+        logLabel: 'Blend RPC endpoint',
+        requestInit: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(12000)
-        });
-        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-        return await response.json();
-      } catch (error) {
-        lastError = error;
-        console.warn(`Blend RPC endpoint failed: ${endpoint}`, error);
+          body: JSON.stringify(body)
+        }
       }
-    }
-    throw lastError || new Error('All Blend RPC endpoints failed.');
+    );
+    if (data) return data;
+    throw new Error('All Blend RPC endpoints failed.');
   }
 
   async function blendLoadTemplateMap() {
@@ -3176,19 +3209,13 @@ window._deepLinkIntent = null;
     }
     blendBuildCategoryList();
     blendApplyFilters();
-    // APRÈS
-const intent = window._deepLinkIntent;
-if (intent?.page === 'blend') {
-  window._deepLinkIntent = null;
-  const match = blendRows.find(r => String(r.blend_id) === intent.id);
-  if (match) {
-    blendSelectBlend(match.blend_id);
-  } else if (!selectedBlend) {
-    blendSelectBlend(blendRows[0].blend_id);
-  }
-} else if (!selectedBlend) {
-  blendSelectBlend(blendRows[0].blend_id);
-}
+    const intent = window._deepLinkIntent;
+    if (intent?.page === 'blend') {
+      window._deepLinkIntent = null;
+      const match = blendRows.find(r => String(r.blend_id) === intent.id);
+      if (match) blendSelectBlend(match.blend_id);
+    }
+    if (!selectedBlend) blendRenderEmptySelection();
   }
 
   async function blendFetchRowsFromChain() {
@@ -3799,8 +3826,7 @@ if (intent?.page === 'blend') {
 
   function blendRenderSelected() {
     if (!selectedBlend) {
-      blendSetPreviewEmpty('Select a blend recipe');
-      document.getElementById('blendDetailsArea').innerHTML = '<div class="status-msg" style="margin-top:40px">No blend selected</div>';
+      blendRenderEmptySelection();
       return;
     }
     const qtyInput = document.getElementById('blendQtyInput');
@@ -3884,8 +3910,7 @@ if (intent?.page === 'blend') {
 
   function blendRenderSelectedVisual() {
     if (!selectedBlend) {
-      blendSetPreviewEmpty('Select a blend recipe');
-      document.getElementById('blendDetailsArea').innerHTML = '<div class="status-msg" style="margin-top:40px">No blend selected</div>';
+      blendRenderEmptySelection();
       return;
     }
     const qtyInput = document.getElementById('blendQtyInput');
@@ -3979,8 +4004,7 @@ if (intent?.page === 'blend') {
 
   function blendRenderSelectedCompact() {
     if (!selectedBlend) {
-      blendSetPreviewEmpty('Select a blend recipe');
-      document.getElementById('blendDetailsArea').innerHTML = '<div class="status-msg" style="margin-top:40px">No blend selected</div>';
+      blendRenderEmptySelection();
       return;
     }
     const qtyInput = document.getElementById('blendQtyInput');
@@ -4368,7 +4392,13 @@ if (intent?.page === 'blend') {
 
   function blendSetPreviewEmpty(text) {
     const preview = document.getElementById('blendPreviewArea');
-    if (preview) preview.innerHTML = `<div class="empty-card"><div class="icon">B</div><div>${blendEscape(text)}</div></div>`;
+    if (preview) preview.innerHTML = `<div class="empty-card"><div class="status-msg" style="margin-top:40px">${blendEscape(text)}</div></div>`;
+  }
+
+  function blendRenderEmptySelection() {
+    blendSetPreviewEmpty('Select a blend in the organizer');
+    const detailsArea = document.getElementById('blendDetailsArea');
+    if (detailsArea) detailsArea.innerHTML = '<div class="status-msg" style="margin-top:40px">No blend selected</div>';
   }
 
   function isBlendPageActive() {
@@ -4644,18 +4674,16 @@ if (intent?.page === 'blend') {
 
   async function blendFetchTransactionTrace(txid) {
     if (!blendLooksLikeTxId(txid)) return null;
-    for (const base of HYPERION_ENDPOINTS) {
-      try {
-        const url = `${base}/history/get_transaction?id=${encodeURIComponent(txid)}`;
-        const response = await fetch(url, { signal: AbortSignal.timeout(9000) });
-        if (!response.ok) continue;
-        const data = await response.json();
-        if (data?.trx_id || data?.actions || data?.transaction_id) return data;
-      } catch (error) {
-        console.warn(`Hyperion transaction lookup failed: ${base}`, error.message || error);
+    const data = await fetchJsonFromEndpoints(
+      HYPERION_ENDPOINTS,
+      base => `${base}/history/get_transaction?id=${encodeURIComponent(txid)}`,
+      {
+        timeoutMs: 9000,
+        logLabel: 'Hyperion transaction lookup',
+        acceptResponse: data => !!(data?.trx_id || data?.actions || data?.transaction_id)
       }
-    }
-    return null;
+    );
+    return data || null;
   }
 
   async function blendFetchAssetsByIds(assetIds) {

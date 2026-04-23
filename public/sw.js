@@ -25,15 +25,33 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        if (response.ok && event.request.method === 'GET') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request))
-  );
+  const { request } = event;
+  const url = new URL(request.url);
+
+  if (request.method !== 'GET') return;
+  if (url.origin !== self.location.origin) return;
+
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(request);
+      if (response.ok) {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(request, response.clone());
+      }
+      return response;
+    } catch (_) {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+
+      if (request.mode === 'navigate') {
+        const fallback = await caches.match('/index.html');
+        if (fallback) return fallback;
+      }
+
+      return new Response('Offline', {
+        status: 503,
+        statusText: 'Service Unavailable'
+      });
+    }
+  })());
 });
