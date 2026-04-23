@@ -2893,17 +2893,15 @@ body {
   }
   .blend-recipe-list.is-compact {
     display: grid;
-    grid-template-columns: minmax(0, min(100%, 220px));
+    grid-template-columns: minmax(0, min(100%, 280px));
     grid-template-rows: repeat(var(--ingredient-rows, 1), minmax(1, 1fr));
     gap: clamp(6px, 1.2vh, 10px);
-    align-content: space-evenly;
-    justify-content: center;
-    justify-items: stretch;
+    align-content: center;
     height: 100%;
     min-height: 0;
   }
   .blend-recipe-list.is-compact.is-multi {
-    grid-template-columns: repeat(2, minmax(0, min(46%, 220px)));
+    grid-template-columns: repeat(2, minmax(0, min(50%, 280px)));
   }
   .blend-ingredient-card {
     width: 100%;
