@@ -1,11 +1,11 @@
-const CACHE_NAME = 'pd-multitool-v1';
+const CACHE_NAME = 'pd-multitool-v1.1';
 
 const PRECACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  '/icons/web-app-manifest-192x192.png',
+  '/icons/web-app-manifest-512x512.png',
 ];
 
 self.addEventListener('install', event => {
