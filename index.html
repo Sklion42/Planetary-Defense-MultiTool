@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planetary Defense — MultiTool</title>
+  <title>Planetary Defense - MultiTool</title>
 
   <!-- ── PWA / Web App Config ── -->
   <meta name="theme-color" content="#0a0a0c">
@@ -30,9 +30,9 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/icons/web-app-manifest-512x512.png">
 
   <!-- SEO / social sharing -->
-  <meta name="description" content="Planetary Defense — MultiTool">
-  <meta property="og:title" content="Planetary Defense — MultiTool">
-  <meta property="og:description" content="Planetary Defense - MultiTool - Inventory, Blends, Market and more.">
+  <meta name="description" content="All your Planetary Defense universe in one place - Inventory, Blends, Market and more.">
+  <meta property="og:title" content="Planetary Defense - MultiTool">
+  <meta property="og:description" content="All your Planetary Defense universe in one place - Inventory, Blends, Market and more.">
   <meta property="og:image" content="/icons/web-app-manifest-512x512.png">
   <meta property="og:type" content="website">
 
@@ -534,6 +534,7 @@ const HYPERION_ENDPOINTS = [
 ];
 const WALLET_PROVIDER_STORAGE_KEY = 'pd.wallet.provider';
 const WALLET_ACCOUNT_STORAGE_KEY = 'pd.wallet.account';
+const ASCENDING_TEST_WALLET = 'zmnma.c.wam';
 let collectionMeta = null;
 const marketPriceCache = new Map();
 let activeDetailsRequest = 0;
@@ -543,6 +544,10 @@ let activeWalletPermission = 'active';
 
 function getActiveWallet() {
   return connectedWallet.trim();
+}
+
+function isAscendingAccessWallet(wallet = getActiveWallet()) {
+  return String(wallet || '').trim().toLowerCase() === ASCENDING_TEST_WALLET;
 }
 
 function getWalletProviderName(provider = activeWalletProvider) {
@@ -2927,8 +2932,68 @@ window._deepLinkIntent = null;
   const BLEND_PAGE_ID = 'blendPage';
   const BLEND_CONTRACT = 'blend.nefty';
   const ATOMIC_CONTRACT = 'atomicassets';
+  const ASCEND_CONTRACT = 'pdblend';
+  const ASCEND_FRAGMENT_TEMPLATE = '888509';
+  const ASCEND_MAX_FRAGMENTS_PER_TX = 50;
   const BLEND_SCAN_LOWER_BOUND = '40000';
   const BLEND_CACHE_KEY = `pdnft:blends:${COLLECTION}:v1`;
+  const ASCENDING_ROWS = [
+    {
+      blend_id: 'ascending-sacrifice',
+      isAscending: true,
+      ascendingMode: 'sacrifice',
+      category: 'Ascending - Sacrifice',
+      display_data: {
+        name: 'Sacrifice',
+        description: 'Burn eligible 0-star NFTs to receive fragments. The selection is limited by the maximum possible fragments, bonus included.'
+      }
+    },
+    {
+      blend_id: 'ascending-ascend',
+      isAscending: true,
+      ascendingMode: 'ascend',
+      category: 'Ascending - Ascend',
+      display_data: {
+        name: 'Ascend',
+        description: 'Use one NFT and the required fragments to mint its next star template.'
+      }
+    }
+  ];
+  const ASCEND_FALLBACK_BURN_CONFIGS = [
+    { rarity: 'Common', fragments_guaranteed: 2, bonus_fragments: 1, bonus_chance: 1500 },
+    { rarity: 'Uncommon', fragments_guaranteed: 3, bonus_fragments: 2, bonus_chance: 2500 },
+    { rarity: 'Rare', fragments_guaranteed: 5, bonus_fragments: 3, bonus_chance: 4000 },
+    { rarity: 'Epic', fragments_guaranteed: 8, bonus_fragments: 4, bonus_chance: 6000 },
+    { rarity: 'Legendary', fragments_guaranteed: 12, bonus_fragments: 5, bonus_chance: 8500 },
+    { rarity: 'Mythic', fragments_guaranteed: 16, bonus_fragments: 6, bonus_chance: 10000 }
+  ];
+  const ASCEND_FALLBACK_SCHEMAS = ['creature', 'equipment', 'mercenary', 'services', 'supplies', 'warlord'];
+  const ASCEND_FALLBACK_STARUP_COSTS = [
+    { rarity: 'Common', from_stars: 0, fragments_cost: 4 },
+    { rarity: 'Common', from_stars: 1, fragments_cost: 5 },
+    { rarity: 'Common', from_stars: 2, fragments_cost: 6 },
+    { rarity: 'Uncommon', from_stars: 0, fragments_cost: 6 },
+    { rarity: 'Uncommon', from_stars: 1, fragments_cost: 7 },
+    { rarity: 'Uncommon', from_stars: 2, fragments_cost: 8 },
+    { rarity: 'Rare', from_stars: 0, fragments_cost: 8 },
+    { rarity: 'Rare', from_stars: 1, fragments_cost: 9 },
+    { rarity: 'Rare', from_stars: 2, fragments_cost: 10 },
+    { rarity: 'Epic', from_stars: 0, fragments_cost: 11 },
+    { rarity: 'Epic', from_stars: 1, fragments_cost: 13 },
+    { rarity: 'Epic', from_stars: 2, fragments_cost: 15 },
+    { rarity: 'Epic', from_stars: 3, fragments_cost: 17 },
+    { rarity: 'Epic', from_stars: 4, fragments_cost: 19 },
+    { rarity: 'Legendary', from_stars: 0, fragments_cost: 15 },
+    { rarity: 'Legendary', from_stars: 1, fragments_cost: 17 },
+    { rarity: 'Legendary', from_stars: 2, fragments_cost: 19 },
+    { rarity: 'Legendary', from_stars: 3, fragments_cost: 21 },
+    { rarity: 'Legendary', from_stars: 4, fragments_cost: 23 },
+    { rarity: 'Mythic', from_stars: 0, fragments_cost: 19 },
+    { rarity: 'Mythic', from_stars: 1, fragments_cost: 21 },
+    { rarity: 'Mythic', from_stars: 2, fragments_cost: 23 },
+    { rarity: 'Mythic', from_stars: 3, fragments_cost: 25 },
+    { rarity: 'Mythic', from_stars: 4, fragments_cost: 27 }
+  ];
   const BLEND_RPC_ENDPOINTS = [
     'https://wax.cryptolions.io',
     'https://wax.eosrio.io',
@@ -2948,6 +3013,16 @@ window._deepLinkIntent = null;
   let blendManualSelections = {};
   let blendOpenChoiceKey = '';
   let blendPickerState = null;
+  let ascendingConfig = {
+    loaded: false,
+    burnConfigs: ASCEND_FALLBACK_BURN_CONFIGS,
+    schemas: ASCEND_FALLBACK_SCHEMAS,
+    starupCosts: ASCEND_FALLBACK_STARUP_COSTS,
+    starupMaps: []
+  };
+  let sacrificeSelectedIds = [];
+  let ascendSelectedNftId = '';
+  let ascendSelectedFragmentIds = [];
   let blendMobileView = 'organizer';
   let blendResultState = {
     status: 'idle',
@@ -3181,6 +3256,38 @@ window._deepLinkIntent = null;
     return blendPossibleOutcomes(row).length > 1;
   }
 
+  function blendCanShowAscendingRows() {
+    return isAscendingAccessWallet();
+  }
+
+  function blendAllRows() {
+    return blendCanShowAscendingRows() ? [...ASCENDING_ROWS, ...blendRows] : blendRows;
+  }
+
+  function blendIsAscendingRow(row) {
+    return !!row?.isAscending;
+  }
+
+  function blendEnsureAscendingVisibility() {
+    if (blendCanShowAscendingRows()) return;
+    if (String(currentBlendCategory || '').toLowerCase().startsWith('ascending')) {
+      currentBlendCategory = 'all';
+    }
+    if (selectedBlend && blendIsAscendingRow(selectedBlend)) {
+      selectedBlend = null;
+      sacrificeSelectedIds = [];
+      ascendSelectedNftId = '';
+      ascendSelectedFragmentIds = [];
+      blendManualSelections = {};
+      blendOpenChoiceKey = '';
+      blendRenderEmptySelection();
+    }
+  }
+
+  function ascendingRowByMode(mode) {
+    return ASCENDING_ROWS.find(row => row.ascendingMode === mode) || null;
+  }
+
   function blendMatchesTemplateId(row, templateId) {
     const target = String(templateId || '');
     if (!target) return false;
@@ -3235,6 +3342,42 @@ window._deepLinkIntent = null;
       .sort((a, b) => Number(a.blend_id) - Number(b.blend_id));
   }
 
+  async function ascendingFetchTable(table) {
+    const response = await blendFetchRpc('/v1/chain/get_table_rows', {
+      json: true,
+      code: ASCEND_CONTRACT,
+      scope: ASCEND_CONTRACT,
+      table,
+      limit: 1000,
+      reverse: false,
+      show_payer: false
+    });
+    return Array.isArray(response?.rows) ? response.rows : [];
+  }
+
+  async function ascendingLoadConfig() {
+    if (ascendingConfig.loaded) return ascendingConfig;
+    try {
+      const [burnConfigs, schemas, starupCosts, starupMaps] = await Promise.all([
+        ascendingFetchTable('burnconfigs'),
+        ascendingFetchTable('schemas'),
+        ascendingFetchTable('starupcosts'),
+        ascendingFetchTable('starupmaps')
+      ]);
+      ascendingConfig = {
+        loaded: true,
+        burnConfigs: burnConfigs.length ? burnConfigs : ASCEND_FALLBACK_BURN_CONFIGS,
+        schemas: schemas.length ? schemas.map(row => String(row.schema_name || '')).filter(Boolean) : ASCEND_FALLBACK_SCHEMAS,
+        starupCosts: starupCosts.length ? starupCosts : ASCEND_FALLBACK_STARUP_COSTS,
+        starupMaps
+      };
+    } catch (error) {
+      console.warn('Ascending config unavailable, using local fallback.', error);
+      ascendingConfig = { ...ascendingConfig, loaded: true };
+    }
+    return ascendingConfig;
+  }
+
   async function blendLoadTemplateMap() {
     try {
       const templates = await loadCollectionTemplates();
@@ -3269,17 +3412,13 @@ window._deepLinkIntent = null;
   }
 
   function blendRenderLoadedRows() {
-    if (!blendRows.length) {
-      blendSetListStatus(`No public blends found for ${COLLECTION}.`);
-      blendSetPreviewEmpty('No blend recipe available.');
-      return;
-    }
+    blendEnsureAscendingVisibility();
     blendBuildCategoryList();
     blendApplyFilters();
     const intent = window._deepLinkIntent;
     if (intent?.page === 'blend') {
       window._deepLinkIntent = null;
-      const match = blendRows.find(r => String(r.blend_id) === intent.id);
+      const match = blendAllRows().find(r => String(r.blend_id) === intent.id);
       if (match) {
         blendSelectBlend(match.blend_id);
         if (intent.view === 'recipe' && isBlendMobileMode()) {
@@ -3347,8 +3486,9 @@ window._deepLinkIntent = null;
         return;
       }
       if (!silent) {
-        blendSetListStatus(`Error: ${blendEscape(error.message || error)}`);
-        blendSetPreviewEmpty('Unable to load blend recipes.');
+        blendRows = [];
+        blendLoaded = true;
+        blendRenderLoadedRows();
       }
     } finally {
       blendIsLoading = false;
@@ -3358,8 +3498,10 @@ window._deepLinkIntent = null;
   function blendBuildCategoryList() {
     const list = document.getElementById('blendCategoryList');
     if (!list) return;
-    const counts = new Map([['all', blendRows.length]]);
-    blendRows.forEach(row => {
+    blendEnsureAscendingVisibility();
+    const rows = blendAllRows();
+    const counts = new Map([['all', rows.length]]);
+    rows.forEach(row => {
       const key = blendCategoryParts(row).main;
       counts.set(key, (counts.get(key) || 0) + 1);
     });
@@ -3399,10 +3541,11 @@ window._deepLinkIntent = null;
   }
 
   function blendApplyFilters() {
+    blendEnsureAscendingVisibility();
     const query = (document.getElementById('blendSearchInput')?.value || '').trim().toLowerCase();
     const readyFilter = document.getElementById('blendReadyFilter')?.value || 'all';
     const sort = document.getElementById('blendSortSelect')?.value || 'id';
-    let rows = blendRows.filter(row => {
+    let rows = blendAllRows().filter(row => {
       const parts = blendCategoryParts(row);
       if (currentBlendCategory !== 'all' && parts.main !== currentBlendCategory) return false;
       if (query && !blendSearchText(row).includes(query)) return false;
@@ -3412,6 +3555,11 @@ window._deepLinkIntent = null;
     });
 
     rows.sort((a, b) => {
+      if (blendIsAscendingRow(a) || blendIsAscendingRow(b)) {
+        if (blendIsAscendingRow(a) && !blendIsAscendingRow(b)) return -1;
+        if (!blendIsAscendingRow(a) && blendIsAscendingRow(b)) return 1;
+        return String(a.blend_id).localeCompare(String(b.blend_id));
+      }
       if (sort === 'ready') {
         const diff = blendGetAvailability(b, 1).maxCopies - blendGetAvailability(a, 1).maxCopies;
         if (diff) return diff;
@@ -3609,18 +3757,18 @@ window._deepLinkIntent = null;
             const itemsWrap = document.createElement('div');
             itemsWrap.className = `item-type-items${subCollapsed ? ' is-collapsed' : ''}`;
             group.rows.forEach(row => {
-              const availability = blendGetAvailability(row, 1);
+              const availability = blendIsAscendingRow(row) ? ascendingGetAvailability(row) : blendGetAvailability(row, 1);
               const img = blendImage(row);
               const button = document.createElement('button');
               button.type = 'button';
-              button.className = `blend-row${selectedBlend?.blend_id === row.blend_id ? ' selected' : ''}`;
+              button.className = `blend-row${String(selectedBlend?.blend_id || '') === String(row.blend_id) ? ' selected' : ''}`;
               button.onclick = () => blendSelectBlend(row.blend_id, true);
               button.innerHTML = `
                 ${img ? `<img class="blend-row-thumb" src="${blendEscape(img)}" alt="${blendEscape(blendName(row))}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-                <div class="blend-row-placeholder" style="${img ? 'display:none' : ''}">BLD</div>
+                <div class="blend-row-placeholder" style="${img ? 'display:none' : ''}">${blendIsAscendingRow(row) ? 'ASC' : 'BLD'}</div>
                 <div>
                   <div class="blend-row-title">${blendEscape(blendName(row))}</div>
-                  <div class="blend-row-sub">#${row.blend_id} - ${blendEscape(group.parts.sub)}</div>
+                  <div class="blend-row-sub">${blendIsAscendingRow(row) ? 'Smart contract flow' : `#${row.blend_id}`} - ${blendEscape(group.parts.sub)}</div>
                 </div>
                 <span class="blend-ready-badge${availability.maxCopies > 0 ? '' : ' is-missing'}">${availability.maxCopies > 0 ? `x${availability.maxCopies}` : 'Missing'}</span>`;
               itemsWrap.appendChild(button);
@@ -3876,6 +4024,146 @@ window._deepLinkIntent = null;
 
   blendSelectAssets = blendSelectAssetsWithSlots;
 
+  function ascendingAssetData(asset) {
+    return { ...asset?.template?.immutable_data, ...asset?.data };
+  }
+
+  function ascendingRarity(asset) {
+    const raw = getRarity(asset) || ascendingAssetData(asset).rarity || ascendingAssetData(asset).Rarity || '';
+    return String(raw || '').trim();
+  }
+
+  function ascendingBurnConfigForAsset(asset) {
+    const rarity = ascendingRarity(asset).toLowerCase();
+    return ascendingConfig.burnConfigs.find(cfg => String(cfg.rarity || '').toLowerCase() === rarity) || null;
+  }
+
+  function ascendingStarCount(asset) {
+    return getStarInfo(ascendingAssetData(asset)).count;
+  }
+
+  function ascendingIsFragment(asset) {
+    return String(getTemplateId(asset) || '') === ASCEND_FRAGMENT_TEMPLATE;
+  }
+
+  function ascendingIsAcceptedSchema(asset) {
+    const schema = getAssetSchemaName(asset);
+    return ascendingConfig.schemas.map(String).includes(String(schema || ''));
+  }
+
+  function ascendingIsCollectionAsset(asset) {
+    return String(asset?.collection?.collection_name || asset?.collection_name || COLLECTION) === COLLECTION;
+  }
+
+  function ascendingBurnableAssets() {
+    return blendSortAssetsByNameThenMintDesc(ownedAssets.filter(asset => (
+      !asset.isMissing &&
+      !ascendingIsFragment(asset) &&
+      ascendingIsCollectionAsset(asset) &&
+      ascendingIsAcceptedSchema(asset) &&
+      ascendingStarCount(asset) === 0 &&
+      !!ascendingBurnConfigForAsset(asset)
+    )));
+  }
+
+  function ascendingFragmentsOwned() {
+    return blendSortAssetsByNameThenMintDesc(ownedAssets.filter(asset => (
+      !asset.isMissing &&
+      ascendingIsCollectionAsset(asset) &&
+      ascendingIsFragment(asset)
+    )));
+  }
+
+  function ascendingBurnPreviewForAsset(asset) {
+    const cfg = ascendingBurnConfigForAsset(asset);
+    if (!cfg) return { guaranteed: 0, bonus: 0, max: 0, chance: 0 };
+    const guaranteed = Number(cfg.fragments_guaranteed || 0);
+    const bonus = Number(cfg.bonus_fragments || 0);
+    const chance = Number(cfg.bonus_chance || 0);
+    return {
+      guaranteed,
+      bonus,
+      chance,
+      max: guaranteed + (chance > 0 ? bonus : 0)
+    };
+  }
+
+  function ascendingSacrificePreview(ids = sacrificeSelectedIds) {
+    const idSet = new Set(ids.map(String));
+    const assets = ascendingBurnableAssets().filter(asset => idSet.has(String(asset.asset_id)));
+    return assets.reduce((summary, asset) => {
+      const preview = ascendingBurnPreviewForAsset(asset);
+      summary.assets.push(asset);
+      summary.guaranteed += preview.guaranteed;
+      summary.max += preview.max;
+      summary.bonus += preview.bonus;
+      return summary;
+    }, { assets: [], guaranteed: 0, bonus: 0, max: 0 });
+  }
+
+  function ascendingSplitSacrificeBatches(assets) {
+    const batches = [];
+    let current = [];
+    let currentMax = 0;
+    assets.forEach(asset => {
+      const itemMax = ascendingBurnPreviewForAsset(asset).max;
+      if (current.length && currentMax + itemMax > ASCEND_MAX_FRAGMENTS_PER_TX) {
+        batches.push(current);
+        current = [];
+        currentMax = 0;
+      }
+      current.push(asset);
+      currentMax += itemMax;
+    });
+    if (current.length) batches.push(current);
+    return batches;
+  }
+
+  function ascendingStarupCostForAsset(asset) {
+    const rarity = ascendingRarity(asset).toLowerCase();
+    const stars = ascendingStarCount(asset);
+    return ascendingConfig.starupCosts.find(row => (
+      String(row.rarity || '').toLowerCase() === rarity &&
+      Number(row.from_stars || 0) === stars
+    )) || null;
+  }
+
+  function ascendingStarupMapForAsset(asset) {
+    const templateId = String(getTemplateId(asset) || '');
+    return ascendingConfig.starupMaps.find(row => String(row.template_from || '') === templateId) || null;
+  }
+
+  function ascendingCandidateAssets() {
+    return blendSortAssetsByNameThenMintDesc(ownedAssets.filter(asset => (
+      !asset.isMissing &&
+      !ascendingIsFragment(asset) &&
+      ascendingIsCollectionAsset(asset) &&
+      !!ascendingStarupCostForAsset(asset)
+    )));
+  }
+
+  function ascendingGetSelectedNft() {
+    return ownedAssets.find(asset => String(asset.asset_id || '') === String(ascendSelectedNftId || '')) || null;
+  }
+
+  function ascendingGetSelectedFragments() {
+    const idSet = new Set(ascendSelectedFragmentIds.map(String));
+    return ascendingFragmentsOwned().filter(asset => idSet.has(String(asset.asset_id)));
+  }
+
+  function ascendingGetAvailability(row) {
+    if (!getActiveWallet()) return { maxCopies: 0 };
+    if (row?.ascendingMode === 'sacrifice') {
+      return { maxCopies: ascendingBurnableAssets().length ? 1 : 0 };
+    }
+    const selected = ascendingGetSelectedNft();
+    const cost = selected ? ascendingStarupCostForAsset(selected) : null;
+    const map = selected ? ascendingStarupMapForAsset(selected) : null;
+    const need = Number(cost?.fragments_cost || 0);
+    const have = ascendingFragmentsOwned().length;
+    return { maxCopies: selected && cost && map && have >= need ? 1 : 0 };
+  }
+
   function blendGetAvailability(row, desiredCopies = 1) {
     if (!getActiveWallet()) return { maxCopies: 0, missing: [], requirements: (row.ingredients || []).map(blendRequirementFromIngredient) };
     let maxCopies = 0;
@@ -4074,9 +4362,111 @@ window._deepLinkIntent = null;
     </div>`;
   }
 
+  function ascendingRenderAssetMini(asset, emptyText = 'Select NFT') {
+    if (!asset) return `<div class="blend-ingredient-placeholder">${blendEscape(emptyText)}</div>`;
+    const img = blendAssetImage(asset);
+    const rarity = String(getRarity(asset) || '').replace(/[^a-z0-9_-]/gi, '').toLowerCase();
+    return `${img ? `<img src="${blendEscape(img)}" alt="${blendEscape(blendAssetDisplayName(asset))}" loading="lazy">` : '<div class="blend-ingredient-placeholder">NFT</div>'}
+      <div class="blend-ingredient-card-title${rarity ? ` rarity-${rarity}` : ''}" title="${blendEscape(blendAssetDisplayName(asset))}">${blendEscape(blendAssetDisplayName(asset))}</div>
+      <div class="blend-ingredient-card-state">#${blendEscape(asset.asset_id || '')}</div>`;
+  }
+
+  function ascendingRenderSacrifice() {
+    const preview = document.getElementById('blendPreviewArea');
+    if (!preview) return;
+    const summary = ascendingSacrificePreview();
+    const batches = ascendingSplitSacrificeBatches(summary.assets);
+    const canBurn = getActiveWallet() && summary.assets.length > 0 && batches.every(batch => {
+      const batchMax = ascendingSacrificePreview(batch.map(asset => asset.asset_id)).max;
+      return batchMax <= ASCEND_MAX_FRAGMENTS_PER_TX;
+    });
+    preview.innerHTML = `
+      <div class="blend-recipe-main">
+        <div class="empty-card">
+          <div class="icon">ASC</div>
+          <div>Lore image pending</div>
+        </div>
+        <div class="blend-recipe-list is-compact">
+          <div class="blend-ingredient-card${summary.assets.length ? '' : ' is-missing'}" role="button" tabindex="0" onclick="blendOpenIngredientPicker(0)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();blendOpenIngredientPicker(0);}">
+            <div class="blend-ingredient-img-wrap">
+              <div class="blend-ingredient-placeholder">${summary.assets.length || 'NFT'}</div>
+              <span class="blend-ingredient-x">x${summary.assets.length}</span>
+            </div>
+            <div class="blend-ingredient-card-title">Burnable NFTs</div>
+            <div class="blend-ingredient-card-state">${summary.max} max fragments</div>
+          </div>
+        </div>
+      </div>
+      <div class="blend-recipe-footer">
+        <div class="blend-info-grid">
+          <div class="blend-info-tile"><div class="blend-info-label">Guaranteed</div><div class="blend-info-value">${summary.guaranteed}</div></div>
+          <div class="blend-info-tile"><div class="blend-info-label">Max with bonus</div><div class="blend-info-value">${summary.max}</div></div>
+          <div class="blend-info-tile"><div class="blend-info-label">Transactions</div><div class="blend-info-value">${Math.max(1, batches.length)}</div></div>
+        </div>
+        <div class="blend-action-box">
+          <div><label>Sacrifice selected NFTs</label><div class="blend-ingredient-sub">Batches are sent one after another.</div></div>
+          ${canBurn ? '<button class="market-link" type="button" onclick="blendExecuteSelected()">Sacrifice</button>' : '<button class="market-link" type="button" disabled>Sacrifice</button>'}
+        </div>
+      </div>`;
+    blendRenderDetails(selectedBlend, { maxCopies: canBurn ? 1 : 0 });
+    blendRenderList(blendFilteredRows);
+  }
+
+  function ascendingRenderAscend() {
+    const preview = document.getElementById('blendPreviewArea');
+    if (!preview) return;
+    const nft = ascendingGetSelectedNft();
+    const cost = nft ? ascendingStarupCostForAsset(nft) : null;
+    const map = nft ? ascendingStarupMapForAsset(nft) : null;
+    const need = Number(cost?.fragments_cost || 0);
+    const ownedFragments = ascendingFragmentsOwned();
+    if (need && ascendSelectedFragmentIds.length !== need) {
+      ascendSelectedFragmentIds = ownedFragments.slice(0, need).map(asset => String(asset.asset_id));
+    }
+    const selectedFragments = ascendingGetSelectedFragments();
+    const resultTemplate = map ? blendTemplateMap.get(String(map.template_to)) : null;
+    const canAscend = getActiveWallet() && nft && cost && map && selectedFragments.length >= need;
+    preview.innerHTML = `
+      <div class="blend-recipe-main">
+        <div class="blend-recipe-list is-compact is-multi">
+          <div class="blend-ingredient-card${nft ? '' : ' is-missing'}" role="button" tabindex="0" onclick="blendOpenIngredientPicker(0)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();blendOpenIngredientPicker(0);}">
+            <div class="blend-ingredient-img-wrap">${ascendingRenderAssetMini(nft, 'NFT')}</div>
+          </div>
+          <div class="blend-ingredient-card${selectedFragments.length >= need && need ? '' : ' is-missing'}" role="button" tabindex="0" onclick="blendOpenIngredientPicker(1)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();blendOpenIngredientPicker(1);}">
+            <div class="blend-ingredient-img-wrap">
+              <div class="blend-ingredient-placeholder">FRG</div>
+              <span class="blend-ingredient-x">x${need || '?'}</span>
+            </div>
+            <div class="blend-ingredient-card-title">Fragments</div>
+            <div class="blend-ingredient-card-state">${selectedFragments.length}/${need || 0} selected</div>
+          </div>
+        </div>
+        <div class="blend-ingredient-card${resultTemplate ? '' : ' is-missing'}">
+          <div class="blend-ingredient-img-wrap">
+            ${resultTemplate && blendTemplateImage(resultTemplate) ? `<img src="${blendEscape(blendTemplateImage(resultTemplate))}" alt="${blendEscape(blendTemplateName(resultTemplate))}" loading="lazy">` : '<div class="blend-ingredient-placeholder">?</div>'}
+          </div>
+          <div class="blend-ingredient-card-title">${resultTemplate ? blendEscape(blendTemplateName(resultTemplate)) : 'Result template unavailable'}</div>
+          <div class="blend-ingredient-card-state">${map ? `Template #${blendEscape(map.template_to)}` : 'Missing star-up mapping'}</div>
+        </div>
+      </div>
+      <div class="blend-recipe-footer">
+        <div class="blend-action-box">
+          <div><label>Ascend selected NFT</label><div class="blend-ingredient-sub">${need ? `${need} fragments required` : 'Select an eligible NFT'}</div></div>
+          ${canAscend ? '<button class="market-link" type="button" onclick="blendExecuteSelected()">Ascend</button>' : '<button class="market-link" type="button" disabled>Ascend</button>'}
+        </div>
+      </div>`;
+    blendRenderDetails(selectedBlend, { maxCopies: canAscend ? 1 : 0 });
+    blendRenderList(blendFilteredRows);
+  }
+
   function blendRenderSelectedCompact() {
     if (!selectedBlend) {
       blendRenderEmptySelection();
+      return;
+    }
+    if (blendIsAscendingRow(selectedBlend)) {
+      if (selectedBlend.ascendingMode === 'sacrifice') ascendingRenderSacrifice();
+      else ascendingRenderAscend();
       return;
     }
     const qtyInput = document.getElementById('blendQtyInput');
@@ -4134,6 +4524,46 @@ window._deepLinkIntent = null;
   }
 
   function blendOpenIngredientPicker(reqIndex) {
+    if (blendIsAscendingRow(selectedBlend)) {
+      if (selectedBlend.ascendingMode === 'sacrifice') {
+        blendPickerState = {
+          mode: 'sacrifice',
+          reqIndex,
+          need: 0,
+          requirement: { label: 'Burnable NFTs' },
+          candidates: ascendingBurnableAssets(),
+          selectedIds: [...sacrificeSelectedIds]
+        };
+      } else if (reqIndex === 0) {
+        blendPickerState = {
+          mode: 'ascendNft',
+          reqIndex,
+          need: 1,
+          requirement: { label: 'NFT to ascend' },
+          candidates: ascendingCandidateAssets(),
+          selectedIds: ascendSelectedNftId ? [String(ascendSelectedNftId)] : []
+        };
+      } else {
+        const nft = ascendingGetSelectedNft();
+        const cost = nft ? ascendingStarupCostForAsset(nft) : null;
+        const need = Number(cost?.fragments_cost || 0);
+        blendPickerState = {
+          mode: 'ascendFragments',
+          reqIndex,
+          need,
+          requirement: { label: 'Fragments' },
+          candidates: ascendingFragmentsOwned(),
+          selectedIds: [...ascendSelectedFragmentIds]
+        };
+      }
+      const modal = document.getElementById('blendPickerModal');
+      if (modal) {
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+      blendRenderPickerModal();
+      return;
+    }
     const pickerData = blendGetPickerAvailability();
     if (!pickerData) return;
     const requirement = pickerData.availability.requirements[reqIndex];
@@ -4180,10 +4610,17 @@ window._deepLinkIntent = null;
     const { requirement, need, candidates, selectedIds } = blendPickerState;
     const selectedCount = selectedIds.length;
     title.textContent = requirement.label;
-    subtitle.textContent = `Selected ${selectedCount}/${need}. Highest mint is selected by default.`;
-    confirmBtn.disabled = selectedCount !== need;
+    if (blendPickerState.mode === 'sacrifice') {
+      const summary = ascendingSacrificePreview(selectedIds);
+      const txCount = Math.max(1, ascendingSplitSacrificeBatches(summary.assets).length);
+      subtitle.textContent = `Selected ${selectedCount} NFT${selectedCount > 1 ? 's' : ''} - ${summary.guaranteed} guaranteed, ${summary.max} max fragments, ${txCount} tx.`;
+      confirmBtn.disabled = selectedCount < 1;
+    } else {
+      subtitle.textContent = `Selected ${selectedCount}/${need}. Highest mint is selected by default.`;
+      confirmBtn.disabled = selectedCount !== need;
+    }
 
-    if (!requirement.automatable) {
+    if (!requirement.automatable && !blendPickerState.mode) {
       body.innerHTML = `<div class="status-msg">This ingredient cannot be selected automatically yet.</div>
         ${requirement.marketHref ? `<a class="market-link" href="${blendEscape(requirement.marketHref)}" target="_blank" rel="noopener">Open market</a>` : ''}`;
       return;
@@ -4196,17 +4633,32 @@ window._deepLinkIntent = null;
       return;
     }
 
-    const cards = candidates.map(asset => {
+    const groupedCandidates = blendPickerState.mode === 'sacrifice'
+      ? candidates.reduce((groups, asset) => {
+          const key = `${formatSchemaName(getAssetSchemaName(asset))} / ${ascendingRarity(asset) || 'Unknown'}`;
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(asset);
+          return groups;
+        }, {})
+      : { '': candidates };
+    const cards = Object.entries(groupedCandidates).map(([heading, assets]) => {
+      const groupCards = assets.map(asset => {
       const assetId = String(asset.asset_id);
       const selected = selectedIds.includes(assetId);
       const img = blendAssetImage(asset);
+      const burnPreview = blendPickerState.mode === 'sacrifice' ? ascendingBurnPreviewForAsset(asset) : null;
       return `<button class="blend-picker-card${selected ? ' is-selected' : ''}" type="button" onclick="blendTogglePickerAsset('${blendEscape(assetId)}')">
         ${img ? `<img src="${blendEscape(img)}" alt="${blendEscape(blendAssetDisplayName(asset))}" loading="lazy">` : '<div class="blend-picker-placeholder">NFT</div>'}
         <div class="blend-picker-name" title="${blendEscape(blendAssetDisplayName(asset))}">${blendEscape(blendAssetDisplayName(asset))}</div>
-        <div class="blend-picker-meta">Mint #${blendAssetMint(asset) || '-'} - ${blendEscape(assetId)}</div>
+        <div class="blend-picker-meta">${burnPreview ? `${burnPreview.guaranteed}-${burnPreview.max} fragments - ` : ''}Mint #${blendAssetMint(asset) || '-'} - ${blendEscape(assetId)}</div>
       </button>`;
+      }).join('');
+      return `${heading ? `<div class="item-schema-heading">${blendEscape(heading)}</div>` : ''}<div class="blend-picker-grid">${groupCards}</div>`;
     }).join('');
-    body.innerHTML = `<div class="blend-choice-title">Choose ${need} NFT${need > 1 ? 's' : ''} to consume</div><div class="blend-picker-grid">${cards}</div>`;
+    const titleText = blendPickerState.mode === 'sacrifice'
+      ? 'Choose NFTs to sacrifice'
+      : `Choose ${need} NFT${need > 1 ? 's' : ''} to consume`;
+    body.innerHTML = `<div class="blend-choice-title">${titleText}</div>${cards}`;
   }
 
   function blendTogglePickerAsset(assetId) {
@@ -4216,6 +4668,10 @@ window._deepLinkIntent = null;
     const existingIndex = selectedIds.indexOf(id);
     if (existingIndex >= 0) {
       selectedIds.splice(existingIndex, 1);
+    } else if (blendPickerState.mode === 'sacrifice') {
+      selectedIds.push(id);
+    } else if (blendPickerState.mode === 'ascendNft') {
+      selectedIds.splice(0, selectedIds.length, id);
     } else if (selectedIds.length < blendPickerState.need) {
       selectedIds.push(id);
     } else {
@@ -4228,6 +4684,34 @@ window._deepLinkIntent = null;
 
   function blendConfirmIngredientPicker() {
     if (!blendPickerState || !selectedBlend) return;
+    if (blendIsAscendingRow(selectedBlend)) {
+      if (blendPickerState.mode === 'sacrifice') {
+        if (!blendPickerState.selectedIds.length) {
+          alert('Select at least one NFT before validating.');
+          return;
+        }
+        sacrificeSelectedIds = [...blendPickerState.selectedIds];
+      } else if (blendPickerState.mode === 'ascendNft') {
+        if (blendPickerState.selectedIds.length !== 1) {
+          alert('Select one NFT before validating.');
+          return;
+        }
+        ascendSelectedNftId = String(blendPickerState.selectedIds[0]);
+        const nft = ascendingGetSelectedNft();
+        const cost = nft ? ascendingStarupCostForAsset(nft) : null;
+        const need = Number(cost?.fragments_cost || 0);
+        ascendSelectedFragmentIds = ascendingFragmentsOwned().slice(0, need).map(asset => String(asset.asset_id));
+      } else if (blendPickerState.mode === 'ascendFragments') {
+        if (blendPickerState.selectedIds.length !== blendPickerState.need) {
+          alert(`Select ${blendPickerState.need} fragment${blendPickerState.need > 1 ? 's' : ''} before validating.`);
+          return;
+        }
+        ascendSelectedFragmentIds = [...blendPickerState.selectedIds];
+      }
+      blendCloseIngredientPicker();
+      blendRenderSelected();
+      return;
+    }
     if (blendPickerState.selectedIds.length !== blendPickerState.need) {
       alert(`Select ${blendPickerState.need} NFT${blendPickerState.need > 1 ? 's' : ''} before validating.`);
       return;
@@ -4313,6 +4797,40 @@ window._deepLinkIntent = null;
   blendRenderSelected = blendRenderSelectedCompact;
 
   function blendRenderDetails(row, availability) {
+    if (blendIsAscendingRow(row)) {
+      if (row.ascendingMode === 'sacrifice') {
+        const summary = ascendingSacrificePreview();
+        const batches = ascendingSplitSacrificeBatches(summary.assets);
+        document.getElementById('blendDetailsArea').innerHTML = `
+          <div class="rarity-line"><span>Sacrifice</span><span style="margin-left:auto">Ascending</span></div>
+          <div class="blend-info-grid">
+            <div class="blend-info-tile"><div class="blend-info-label">Selected NFTs</div><div class="blend-info-value">${summary.assets.length}</div></div>
+            <div class="blend-info-tile"><div class="blend-info-label">Guaranteed</div><div class="blend-info-value">${summary.guaranteed}</div></div>
+            <div class="blend-info-tile"><div class="blend-info-label">Max fragments</div><div class="blend-info-value">${summary.max}</div></div>
+            <div class="blend-info-tile"><div class="blend-info-label">Batch limit</div><div class="blend-info-value">${ASCEND_MAX_FRAGMENTS_PER_TX}</div></div>
+            <div class="blend-info-tile"><div class="blend-info-label">Transactions</div><div class="blend-info-value">${Math.max(1, batches.length)}</div></div>
+            <div class="blend-info-tile"><div class="blend-info-label">Contract</div><div class="blend-info-value">${blendEscape(ASCEND_CONTRACT)}</div></div>
+          </div>
+          <div class="desc-block"><div class="desc-title">Flow</div><div class="blend-desc"><p>Eligible 0-star NFTs are sent to the contract with memo burn. The contract burns them and mints fragments from the on-chain rarity config.</p></div></div>`;
+        return;
+      }
+      const nft = ascendingGetSelectedNft();
+      const cost = nft ? ascendingStarupCostForAsset(nft) : null;
+      const map = nft ? ascendingStarupMapForAsset(nft) : null;
+      const resultTemplate = map ? blendTemplateMap.get(String(map.template_to)) : null;
+      document.getElementById('blendDetailsArea').innerHTML = `
+        <div class="rarity-line"><span>Ascend</span><span style="margin-left:auto">Ascending</span></div>
+        <div class="blend-info-grid">
+          <div class="blend-info-tile"><div class="blend-info-label">Selected NFT</div><div class="blend-info-value">${nft ? blendEscape(getTemplateId(nft)) : '-'}</div></div>
+          <div class="blend-info-tile"><div class="blend-info-label">Current stars</div><div class="blend-info-value">${nft ? ascendingStarCount(nft) : '-'}</div></div>
+          <div class="blend-info-tile"><div class="blend-info-label">Fragments required</div><div class="blend-info-value">${cost ? cost.fragments_cost : '-'}</div></div>
+          <div class="blend-info-tile"><div class="blend-info-label">Selected fragments</div><div class="blend-info-value">${ascendingGetSelectedFragments().length}</div></div>
+          <div class="blend-info-tile"><div class="blend-info-label">Result</div><div class="blend-info-value">${map ? `Template #${blendEscape(map.template_to)}` : '-'}</div></div>
+          <div class="blend-info-tile"><div class="blend-info-label">Preview</div><div class="blend-info-value">${resultTemplate ? blendEscape(blendTemplateName(resultTemplate)) : 'Mapping needed'}</div></div>
+        </div>
+        <div class="desc-block"><div class="desc-title">Flow</div><div class="blend-desc"><p>The selected NFT and required fragments are sent together with memo ascend. The contract burns the inputs and mints the mapped next-star template.</p></div></div>`;
+      return;
+    }
     const display = blendParseDisplayData(row);
     const desc = blendFormatDescription(display.description || '');
     const parts = blendCategoryParts(row);
@@ -4488,7 +5006,7 @@ window._deepLinkIntent = null;
   }
 
   function blendSelectBlend(blendId, fromUser = false) {
-  selectedBlend = blendRows.find(row => String(row.blend_id) === String(blendId)) || null;
+  selectedBlend = blendAllRows().find(row => String(row.blend_id) === String(blendId)) || null;
   blendManualSelections = {};   // reset aussi les choix manuels
   blendOpenChoiceKey = '';
   // Reset la quantité à 1 pour le nouveau blend
@@ -4844,10 +5362,120 @@ window._deepLinkIntent = null;
     return activeWalletPermission || 'active';
   }
 
+  async function ascendingExecuteSacrifice() {
+    const wallet = getActiveWallet();
+    const permission = blendGetPermission();
+    const summary = ascendingSacrificePreview();
+    const batches = ascendingSplitSacrificeBatches(summary.assets);
+    if (!batches.length) {
+      alert('Select at least one NFT to sacrifice.');
+      return;
+    }
+    if (!confirm(`Sacrifice ${summary.assets.length} NFT${summary.assets.length > 1 ? 's' : ''} in ${batches.length} transaction${batches.length > 1 ? 's' : ''}?`)) return;
+    blendOpenResultModal({ expectedCount: summary.max, blendLabel: 'Sacrifice' });
+    try {
+      for (let index = 0; index < batches.length; index += 1) {
+        const batch = batches[index];
+        blendSetResultState({
+          status: 'waiting',
+          message: `Sending sacrifice transaction ${index + 1}/${batches.length}...`
+        });
+        const result = await transactWithActiveWallet({
+          actions: [{
+            account: ATOMIC_CONTRACT,
+            name: 'transfer',
+            authorization: [{ actor: wallet, permission }],
+            data: {
+              from: wallet,
+              to: ASCEND_CONTRACT,
+              asset_ids: batch.map(asset => String(asset.asset_id)),
+              memo: 'burn'
+            }
+          }]
+        }, { blocksBehind: 3, expireSeconds: 120 });
+        blendSetResultState({
+          status: 'waiting',
+          txid: blendExtractTransactionId(result),
+          message: `Transaction ${index + 1}/${batches.length} confirmed.`
+        });
+        await blendDelay(700);
+      }
+      sacrificeSelectedIds = [];
+      await syncWalletData();
+      blendSetResultState({
+        status: 'empty',
+        message: 'Sacrifice complete. Refreshing inventory will show newly minted fragments when the indexer catches up.'
+      });
+      blendRenderSelected();
+    } catch (error) {
+      console.error(error);
+      blendSetResultState({ status: 'error', message: `Sacrifice failed: ${error?.message || error}` });
+    }
+  }
+
+  async function ascendingExecuteAscend() {
+    const wallet = getActiveWallet();
+    const permission = blendGetPermission();
+    const nft = ascendingGetSelectedNft();
+    const cost = nft ? ascendingStarupCostForAsset(nft) : null;
+    const map = nft ? ascendingStarupMapForAsset(nft) : null;
+    const need = Number(cost?.fragments_cost || 0);
+    const fragments = ascendingGetSelectedFragments().slice(0, need);
+    if (!nft || !cost || !map || fragments.length < need) {
+      alert('Select an eligible NFT and the required fragments.');
+      blendRenderSelected();
+      return;
+    }
+    if (!confirm(`Ascend ${blendAssetDisplayName(nft)} using ${need} fragments?`)) return;
+    const beforeAssetIds = new Set(ownedAssets.map(asset => String(asset.asset_id || '')).filter(Boolean));
+    try {
+      blendOpenResultModal({ expectedCount: 1, blendLabel: 'Ascend' });
+      const result = await transactWithActiveWallet({
+        actions: [{
+          account: ATOMIC_CONTRACT,
+          name: 'transfer',
+          authorization: [{ actor: wallet, permission }],
+          data: {
+            from: wallet,
+            to: ASCEND_CONTRACT,
+            asset_ids: [String(nft.asset_id), ...fragments.map(asset => String(asset.asset_id))],
+            memo: 'ascend'
+          }
+        }]
+      }, { blocksBehind: 3, expireSeconds: 120 });
+      const txid = blendExtractTransactionId(result);
+      blendSetResultState({ status: 'waiting', txid, message: 'Transaction confirmed. Waiting for ascended NFT...' });
+      const resultAssets = await blendFindResultAssets({
+        beforeAssetIds,
+        expectedCount: 1,
+        traceAssetIds: blendExtractMintedAssetIds(result, wallet),
+        txid,
+        wallet
+      });
+      ascendSelectedNftId = '';
+      ascendSelectedFragmentIds = [];
+      if (resultAssets.length) {
+        blendSetResultState({ status: 'ready', assets: resultAssets, index: 0, message: '' });
+      } else {
+        blendSetResultState({ status: 'empty', message: 'Ascend confirmed, but the new NFT is not visible yet.' });
+      }
+      blendRenderSelected();
+      blendApplyFilters();
+    } catch (error) {
+      console.error(error);
+      blendSetResultState({ status: 'error', message: `Ascend failed: ${error?.message || error}` });
+    }
+  }
+
   async function blendExecuteSelected() {
     if (!selectedBlend) return;
     if (!getActiveWallet()) {
       openWalletModal();
+      return;
+    }
+    if (blendIsAscendingRow(selectedBlend)) {
+      if (selectedBlend.ascendingMode === 'sacrifice') await ascendingExecuteSacrifice();
+      else await ascendingExecuteAscend();
       return;
     }
     const qty = Math.max(1, Number(document.getElementById('blendQtyInput')?.value || 1));
@@ -4974,6 +5602,11 @@ window._deepLinkIntent = null;
   async function blendHandlePageEnter() {
     blendSyncWalletUi();
     blendSyncMobileState();
+    ascendingLoadConfig().then(() => {
+      if (selectedBlend && blendIsAscendingRow(selectedBlend)) blendRenderSelected();
+      blendBuildCategoryList();
+      blendApplyFilters();
+    });
     try {
       blendSyncCollectionBanner(collectionMeta || await loadCollectionMeta());
     } catch (_) {
@@ -5007,6 +5640,8 @@ window._deepLinkIntent = null;
 
   function blendRefreshWalletData() {
     if (!blendLoaded) return;
+    blendEnsureAscendingVisibility();
+    blendBuildCategoryList();
     blendApplyFilters();
     if (selectedBlend) blendRenderSelected();
   }
@@ -5029,8 +5664,12 @@ window._deepLinkIntent = null;
   window.updateWalletUi = function() {
     previousUpdateWalletUi();
     blendSyncWalletUi();
-    if (selectedBlend) {
+    blendEnsureAscendingVisibility();
+    if (blendLoaded || isBlendPageActive()) {
+      blendBuildCategoryList();
       blendApplyFilters();
+    }
+    if (selectedBlend) {
       blendRenderSelected();
     }
   };
