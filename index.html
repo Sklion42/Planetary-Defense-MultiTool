@@ -3662,7 +3662,7 @@ window._deepLinkIntent = null;
       const parts = blendCategoryParts(row);
       if (currentBlendCategory !== 'all' && parts.main !== currentBlendCategory) return false;
       if (query && !blendSearchText(row).includes(query)) return false;
-      const availability = blendGetAvailability(row, 1);
+      const availability = blendIsAscendingRow(row) ? ascendingGetAvailability(row) : blendGetAvailability(row, 1);
       if (!blendMatchesReadyFilter(availability, readyFilter)) return false;
       return true;
     });
@@ -4268,7 +4268,7 @@ window._deepLinkIntent = null;
   function ascendingGetAvailability(row) {
     if (!getActiveWallet()) return { maxCopies: 0 };
     if (row?.ascendingMode === 'sacrifice') {
-      return { maxCopies: ascendingBurnableAssets().length ? 1 : 0 };
+      return { maxCopies: ascendingBurnableAssets().length };
     }
     const selected = ascendingGetSelectedNft();
     const cost = selected ? ascendingStarupCostForAsset(selected) : null;
@@ -4494,9 +4494,7 @@ window._deepLinkIntent = null;
   function ascendingRenderLargeAssetFrame(asset) {
     if (!asset) {
       return `<button class="ascend-nft-frame is-empty" type="button" onclick="blendOpenIngredientPicker(0)">
-        <div class="ascend-card-image-slot"><div class="blend-ingredient-placeholder">NFT</div></div>
-        <div class="ascend-card-name">No NFT selected</div>
-        <div class="ascend-card-meta">Select the NFT to Ascend</div>
+        <div class="ascend-card-image-slot"><div class="blend-ingredient-placeholder">Select the NFT to ascend</div></div>
       </button>`;
     }
     const img = blendAssetImage(asset);
@@ -4553,6 +4551,7 @@ window._deepLinkIntent = null;
       const preview = ascendingBurnPreviewForAsset(asset);
       const rarity = String(ascendingRarity(asset) || '').replace(/[^a-z0-9_-]/gi, '').toLowerCase();
       return `<div class="sacrifice-selected-item">
+        <button class="sacrifice-remove-btn" type="button" onclick="ascendingRemoveSacrificeAsset('${blendEscape(asset.asset_id || '')}')" aria-label="Remove ${blendEscape(blendAssetDisplayName(asset))} from sacrifice">×</button>
         <div class="sacrifice-selected-thumb">
           ${img ? `<img src="${blendEscape(img)}" alt="${blendEscape(blendAssetDisplayName(asset))}" loading="lazy">` : '<div class="blend-ingredient-placeholder">NFT</div>'}
         </div>
@@ -4562,6 +4561,12 @@ window._deepLinkIntent = null;
         </div>
       </div>`;
     }).join('')}</div>`;
+  }
+
+  function ascendingRemoveSacrificeAsset(assetId) {
+    const id = String(assetId || '');
+    sacrificeSelectedIds = sacrificeSelectedIds.filter(selectedId => String(selectedId) !== id);
+    blendRenderSelected();
   }
 
   function ascendingRenderSacrifice() {
@@ -4580,11 +4585,9 @@ window._deepLinkIntent = null;
         <div class="ascend-input-panel sacrifice-input-panel">
           <div class="ascend-panel-title">Sacrifice Input</div>
           <button class="sacrifice-picker-card${summary.assets.length ? '' : ' is-missing'}" type="button" onclick="blendOpenIngredientPicker(0)">
-            <div class="sacrifice-picker-count">${summary.assets.length || 'NFT'}</div>
-            <div class="ascend-card-name">Burnable NFTs</div>
-            <div class="ascend-card-meta">${summary.max} max fragments</div>
+            <div class="sacrifice-picker-label">Select the NFTs to sacrifice</div>
+            <div class="ascend-card-meta">${summary.assets.length} selected - ${summary.max} max fragments</div>
           </button>
-          <div class="ascend-helper-copy">Select NFTs to sacrifice.</div>
           <div class="sacrifice-selected-panel">
             <div class="ascend-panel-title">Selected NFTs</div>
             ${ascendingRenderSacrificeList(summary.assets)}
@@ -4601,7 +4604,7 @@ window._deepLinkIntent = null;
           ${canBurn ? `<button class="market-link" type="button" onclick="blendExecuteSelected()">Sacrifice (${txCount} transaction${txCount > 1 ? 's' : ''})</button>` : `<button class="market-link" type="button" disabled>Sacrifice (${txCount} transaction${txCount > 1 ? 's' : ''})</button>`}
         </div>
       </div>`;
-    blendRenderDetails(selectedBlend, { maxCopies: canBurn ? 1 : 0 });
+    blendRenderDetails(selectedBlend, { maxCopies: ascendingBurnableAssets().length });
     blendRenderList(blendFilteredRows);
   }
 
@@ -4628,7 +4631,6 @@ window._deepLinkIntent = null;
           <div class="ascend-input-grid">
             <div class="ascend-input-copy">
               ${ascendingRenderLargeAssetFrame(nft)}
-              <div class="ascend-helper-copy">Select the NFT to Ascend.</div>
             </div>
             <div class="ascend-input-copy">
               ${ascendingRenderFragmentFrame(need, selectedFragments.length)}
@@ -4952,8 +4954,10 @@ window._deepLinkIntent = null;
       ? 'Choose NFTs to sacrifice'
       : `Choose ${need} NFT${need > 1 ? 's' : ''} to consume`;
     if (blendPickerUsesAscendingFilters()) {
-      body.innerHTML = `<div class="blend-choice-title">${titleText}</div>
-        ${blendRenderAscendingPickerToolbar(candidates)}
+      body.innerHTML = `<div class="blend-picker-sticky">
+          <div class="blend-choice-title">${titleText}</div>
+          ${blendRenderAscendingPickerToolbar(candidates)}
+        </div>
         ${blendRenderAscendingPickerGroups(candidates, selectedIds)}`;
       return;
     }
@@ -6060,6 +6064,7 @@ window._deepLinkIntent = null;
   window.blendTogglePickerAsset = blendTogglePickerAsset;
   window.blendConfirmIngredientPicker = blendConfirmIngredientPicker;
   window.blendCloseIngredientPicker = blendCloseIngredientPicker;
+  window.ascendingRemoveSacrificeAsset = ascendingRemoveSacrificeAsset;
   window.blendAdjustQty = blendAdjustQty;
   window.blendOpenOutcomesModal = blendOpenOutcomesModal;
   window.blendCloseOutcomesModal = blendCloseOutcomesModal;

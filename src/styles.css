@@ -3144,6 +3144,21 @@ body {
     font-size: 18px;
     font-weight: 700;
   }
+  .sacrifice-picker-label {
+    width: 100%;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    line-height: 1.35;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
   .sacrifice-selected-panel {
     margin-top: 10px;
     padding-top: 10px;
@@ -3155,6 +3170,7 @@ body {
     gap: 7px;
   }
   .sacrifice-selected-item {
+    position: relative;
     min-width: 0;
     display: grid;
     grid-template-columns: 48px minmax(0, 1fr);
@@ -3163,6 +3179,30 @@ body {
     border: 1px solid rgba(34, 211, 255, 0.12);
     background: rgba(0,0,0,0.22);
     padding: 5px;
+  }
+  .sacrifice-remove-btn {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    z-index: 2;
+    width: 22px;
+    height: 22px;
+    border: 1px solid rgba(231, 76, 60, 0.58);
+    background: rgba(26, 8, 10, 0.96);
+    color: #ffd8d8;
+    font-family: 'Orbitron', monospace;
+    font-size: 15px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.18);
+  }
+  .sacrifice-remove-btn:hover {
+    border-color: rgba(255, 113, 113, 0.92);
+    color: #fff;
+    background: rgba(72, 15, 18, 0.98);
   }
   .sacrifice-selected-thumb {
     width: 48px;
@@ -3221,6 +3261,18 @@ body {
     padding: 8px;
     border: 1px solid rgba(34, 211, 255, 0.12);
     background: rgba(4, 8, 12, 0.58);
+  }
+  .blend-picker-sticky {
+    position: sticky;
+    top: -16px;
+    z-index: 3;
+    margin: -16px -18px 10px;
+    padding: 16px 18px 0;
+    background: linear-gradient(180deg, rgba(8, 14, 20, 0.99) 0%, rgba(8, 14, 20, 0.96) 78%, rgba(8, 14, 20, 0) 100%);
+    border-bottom: 1px solid rgba(34, 211, 255, 0.08);
+  }
+  .blend-picker-sticky .blend-picker-toolbar {
+    margin-bottom: 10px;
   }
   .blend-picker-filter {
     min-width: 0;
@@ -3897,6 +3949,11 @@ body {
       height: 64px;
       font-size: 15px;
     }
+    .sacrifice-picker-label {
+      min-height: 38px;
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
     .sacrifice-selected-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 6px;
@@ -3905,6 +3962,13 @@ body {
       grid-template-columns: 38px minmax(0, 1fr);
       gap: 6px;
       padding: 4px;
+    }
+    .sacrifice-remove-btn {
+      width: 20px;
+      height: 20px;
+      top: -6px;
+      right: -6px;
+      font-size: 13px;
     }
     .sacrifice-selected-thumb {
       width: 38px;
