@@ -4204,6 +4204,15 @@ window._deepLinkIntent = null;
     };
   }
 
+  function ascendingFormatBonusChance(chance) {
+    const value = Number(chance || 0) / 100;
+    if (!Number.isFinite(value) || value <= 0) return '0%';
+    return `${value.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: value < 1 ? 2 : 1
+    })}%`;
+  }
+
   function ascendingSacrificePreview(ids = sacrificeSelectedIds) {
     const idSet = new Set(ids.map(String));
     const assets = ascendingBurnableAssets().filter(asset => idSet.has(String(asset.asset_id)));
@@ -4559,8 +4568,12 @@ window._deepLinkIntent = null;
           ${img ? `<img src="${blendEscape(img)}" alt="${blendEscape(blendAssetDisplayName(asset))}" loading="lazy">` : '<div class="blend-ingredient-placeholder">NFT</div>'}
         </div>
         <div class="sacrifice-selected-copy">
-          <div class="sacrifice-selected-name${rarity ? ` rarity-${rarity}` : ''}" title="${blendEscape(blendAssetDisplayName(asset))}">${blendEscape(blendAssetDisplayName(asset))}</div>
-          <div class="sacrifice-selected-meta">${preview.guaranteed}-${preview.max} fragments - #${blendEscape(asset.asset_id || '')}</div>
+          <div class="sacrifice-selected-head">
+            <div class="sacrifice-selected-name${rarity ? ` rarity-${rarity}` : ''}" title="${blendEscape(blendAssetDisplayName(asset))}">${blendEscape(blendAssetDisplayName(asset))}</div>
+            <div class="sacrifice-selected-id">#${blendEscape(asset.asset_id || '')}</div>
+          </div>
+          <div class="sacrifice-selected-meta">${preview.guaranteed} fragments guaranteed</div>
+          <div class="sacrifice-selected-meta">${preview.bonus} fragment bonus (${ascendingFormatBonusChance(preview.chance)})</div>
         </div>
       </div>`;
     }).join('')}</div>`;

@@ -3145,12 +3145,12 @@ body {
     position: relative;
     min-width: 0;
     display: grid;
-    grid-template-columns: 48px minmax(0, 1fr);
-    gap: 8px;
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 9px;
     align-items: center;
     border: 1px solid rgba(34, 211, 255, 0.12);
     background: rgba(0,0,0,0.22);
-    padding: 5px;
+    padding: 6px 26px 6px 6px;
   }
   .sacrifice-remove-btn {
     position: absolute;
@@ -3176,8 +3176,8 @@ body {
     background: rgba(72, 15, 18, 0.98);
   }
   .sacrifice-selected-thumb {
-    width: 48px;
-    height: 48px;
+    width: 54px;
+    height: 54px;
     background: rgba(0,0,0,0.26);
     overflow: hidden;
   }
@@ -3190,6 +3190,13 @@ body {
   .sacrifice-selected-copy {
     min-width: 0;
   }
+  .sacrifice-selected-head {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+    align-items: baseline;
+  }
   .sacrifice-selected-name {
     min-width: 0;
     overflow: hidden;
@@ -3198,6 +3205,12 @@ body {
     color: var(--text);
     font-size: 13px;
     font-weight: 700;
+  }
+  .sacrifice-selected-id {
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    white-space: nowrap;
   }
   .sacrifice-selected-meta {
     margin-top: 3px;
@@ -3927,12 +3940,12 @@ body {
     .sacrifice-selected-item {
       grid-template-columns: 38px minmax(0, 1fr);
       gap: 6px;
-      padding: 4px;
+      padding: 4px 24px 4px 4px;
     }
     .sacrifice-remove-btn {
       width: 20px;
       height: 20px;
-      right: 9px;
+      right: 2px;
       font-size: 20px;
     }
     .sacrifice-selected-thumb {
@@ -3941,6 +3954,9 @@ body {
     }
     .sacrifice-selected-name {
       font-size: 13px;
+    }
+    .sacrifice-selected-id {
+      font-size: 10px;
     }
     .sacrifice-selected-meta {
       font-size: 10px;
