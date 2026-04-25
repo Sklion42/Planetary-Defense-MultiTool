@@ -4584,10 +4584,7 @@ window._deepLinkIntent = null;
       <div class="blend-recipe-main ascend-flow sacrifice-flow">
         <div class="ascend-input-panel sacrifice-input-panel">
           <div class="ascend-panel-title">Sacrifice Input</div>
-          <button class="sacrifice-picker-card${summary.assets.length ? '' : ' is-missing'}" type="button" onclick="blendOpenIngredientPicker(0)">
-            <div class="sacrifice-picker-label">Select the NFTs to sacrifice</div>
-            <div class="ascend-card-meta">${summary.assets.length} selected - ${summary.max} max fragments</div>
-          </button>
+          <button class="market-link" type="button" onclick="blendOpenIngredientPicker(0)">Select the NFTs to sacrifice</button>
           <div class="sacrifice-selected-panel">
             <div class="ascend-panel-title">Selected NFTs</div>
             ${ascendingRenderSacrificeList(summary.assets)}
@@ -4600,7 +4597,6 @@ window._deepLinkIntent = null;
           <div class="blend-info-tile"><div class="blend-info-label">Potential fragment bonus</div><div class="blend-info-value">${bonusPotential}</div></div>
         </div>
         <div class="blend-action-box">
-          <div><label>Sacrifice selected NFTs</label><div class="blend-ingredient-sub">Batches are sent one after another.</div></div>
           ${canBurn ? `<button class="market-link" type="button" onclick="blendExecuteSelected()">Sacrifice (${txCount} transaction${txCount > 1 ? 's' : ''})</button>` : `<button class="market-link" type="button" disabled>Sacrifice (${txCount} transaction${txCount > 1 ? 's' : ''})</button>`}
         </div>
       </div>`;
@@ -4634,19 +4630,16 @@ window._deepLinkIntent = null;
             </div>
             <div class="ascend-input-copy">
               ${ascendingRenderFragmentFrame(need, selectedFragments.length)}
-              <div class="ascend-helper-copy">${blendEscape(fragmentState)}</div>
             </div>
           </div>
         </div>
         <div class="ascend-output-panel">
           <div class="ascend-panel-title">${blendEscape(resultTitle)}</div>
           ${ascendingRenderTemplateFrame(resultTemplate, map ? `Template #${map.template_to}` : 'Result mapping needed')}
-          <div class="ascend-helper-copy">${map ? `Mapped from STARUP_MAPPINGS: #${blendEscape(map.template_from)} to #${blendEscape(map.template_to)}` : 'Select a mapped NFT to preview the reward.'}</div>
         </div>
       </div>
       <div class="blend-recipe-footer">
         <div class="blend-action-box">
-          <div><label>Ascend selected NFT</label><div class="blend-ingredient-sub">${blendEscape(fragmentState)}</div></div>
           ${canAscend ? '<button class="market-link" type="button" onclick="blendExecuteSelected()">Ascend</button>' : '<button class="market-link" type="button" disabled>Ascend</button>'}
         </div>
       </div>`;
