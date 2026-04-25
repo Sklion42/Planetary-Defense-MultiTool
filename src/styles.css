@@ -3019,6 +3019,15 @@ body {
     text-transform: uppercase;
     text-align: center;
   }
+  .ascending-flow-art {
+    width: min(100%, 320px);
+    max-height: clamp(92px, 18vh, 150px);
+    margin: 0 auto 10px;
+    display: block;
+    object-fit: contain;
+    border: 1px solid rgba(34, 211, 255, 0.14);
+    background: rgba(0, 0, 0, 0.22);
+  }
   .ascend-input-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.3fr) minmax(130px, 0.7fr);
@@ -3889,6 +3898,10 @@ body {
     .ascend-panel-title {
       margin-bottom: 6px;
       font-size: 8px;
+    }
+    .ascending-flow-art {
+      max-height: 86px;
+      margin-bottom: 8px;
     }
     .ascend-nft-frame,
     .ascend-fragment-frame {

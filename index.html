@@ -990,6 +990,7 @@ async function loadBlendItCta(asset, requestId) {
 function ipfsToHttp(value) {
   if (!value || typeof value !== 'string') return '';
   if (value.startsWith('http://') || value.startsWith('https://')) return value;
+  if (value.startsWith('/') || value.startsWith('./') || value.startsWith('../')) return value;
   if (value.startsWith('ipfs://')) return IPFS_GW + value.slice(7);
   return IPFS_GW + value;
 }
@@ -2944,6 +2945,7 @@ window._deepLinkIntent = null;
       category: 'Ascending - Sacrifice',
       display_data: {
         name: 'Sacrifice',
+        image: '/img/UI/sacrifice.png',
         description: 'Burn eligible 0-star NFTs to receive fragments. The selection is limited by the maximum possible fragments, bonus included.'
       }
     },
@@ -2954,6 +2956,7 @@ window._deepLinkIntent = null;
       category: 'Ascending - Ascend',
       display_data: {
         name: 'Ascend',
+        image: '/img/UI/ascend.png',
         description: 'Use one NFT and the required fragments to mint its next star template.'
       }
     }
@@ -4584,6 +4587,7 @@ window._deepLinkIntent = null;
       <div class="blend-recipe-main ascend-flow sacrifice-flow">
         <div class="ascend-input-panel sacrifice-input-panel">
           <div class="ascend-panel-title">Sacrifice Input</div>
+          <img class="ascending-flow-art" src="/img/UI/sacrifice.png" alt="Sacrifice" loading="lazy">
           <button class="market-link" type="button" onclick="blendOpenIngredientPicker(0)">Select the NFTs to sacrifice</button>
           <div class="sacrifice-selected-panel">
             <div class="ascend-panel-title">Selected NFTs</div>
@@ -4624,6 +4628,7 @@ window._deepLinkIntent = null;
       <div class="blend-recipe-main ascend-flow">
         <div class="ascend-input-panel">
           <div class="ascend-panel-title">Ascend Input</div>
+          <img class="ascending-flow-art" src="/img/UI/ascend.png" alt="Ascend" loading="lazy">
           <div class="ascend-input-grid">
             <div class="ascend-input-copy">
               ${ascendingRenderLargeAssetFrame(nft)}
