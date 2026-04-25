@@ -534,7 +534,6 @@ const HYPERION_ENDPOINTS = [
 ];
 const WALLET_PROVIDER_STORAGE_KEY = 'pd.wallet.provider';
 const WALLET_ACCOUNT_STORAGE_KEY = 'pd.wallet.account';
-const ASCENDING_TEST_WALLET = 'zmnma.c.wam';
 let collectionMeta = null;
 const marketPriceCache = new Map();
 let activeDetailsRequest = 0;
@@ -544,10 +543,6 @@ let activeWalletPermission = 'active';
 
 function getActiveWallet() {
   return connectedWallet.trim();
-}
-
-function isAscendingAccessWallet(wallet = getActiveWallet()) {
-  return String(wallet || '').trim().toLowerCase() === ASCENDING_TEST_WALLET;
 }
 
 function getWalletProviderName(provider = activeWalletProvider) {
@@ -2933,6 +2928,7 @@ window._deepLinkIntent = null;
   const BLEND_CONTRACT = 'blend.nefty';
   const ATOMIC_CONTRACT = 'atomicassets';
   const ASCEND_CONTRACT = 'pdblend';
+  const ASCENDING_ALLOWED_WALLET = 'zmnma.c.wam';
   const ASCEND_FRAGMENT_TEMPLATE = '888509';
   const ASCEND_MAX_FRAGMENTS_PER_TX = 50;
   const BLEND_SCAN_LOWER_BOUND = '40000';
@@ -3256,32 +3252,16 @@ window._deepLinkIntent = null;
     return blendPossibleOutcomes(row).length > 1;
   }
 
-  function blendCanShowAscendingRows() {
-    return isAscendingAccessWallet();
+  function ascendingHasWalletAccess() {
+    return String(getActiveWallet() || '').trim().toLowerCase() === ASCENDING_ALLOWED_WALLET;
   }
 
   function blendAllRows() {
-    return blendCanShowAscendingRows() ? [...ASCENDING_ROWS, ...blendRows] : blendRows;
+    return ascendingHasWalletAccess() ? [...ASCENDING_ROWS, ...blendRows] : [...blendRows];
   }
 
   function blendIsAscendingRow(row) {
     return !!row?.isAscending;
-  }
-
-  function blendEnsureAscendingVisibility() {
-    if (blendCanShowAscendingRows()) return;
-    if (String(currentBlendCategory || '').toLowerCase().startsWith('ascending')) {
-      currentBlendCategory = 'all';
-    }
-    if (selectedBlend && blendIsAscendingRow(selectedBlend)) {
-      selectedBlend = null;
-      sacrificeSelectedIds = [];
-      ascendSelectedNftId = '';
-      ascendSelectedFragmentIds = [];
-      blendManualSelections = {};
-      blendOpenChoiceKey = '';
-      blendRenderEmptySelection();
-    }
   }
 
   function ascendingRowByMode(mode) {
@@ -3412,7 +3392,6 @@ window._deepLinkIntent = null;
   }
 
   function blendRenderLoadedRows() {
-    blendEnsureAscendingVisibility();
     blendBuildCategoryList();
     blendApplyFilters();
     const intent = window._deepLinkIntent;
@@ -3498,13 +3477,15 @@ window._deepLinkIntent = null;
   function blendBuildCategoryList() {
     const list = document.getElementById('blendCategoryList');
     if (!list) return;
-    blendEnsureAscendingVisibility();
     const rows = blendAllRows();
     const counts = new Map([['all', rows.length]]);
     rows.forEach(row => {
       const key = blendCategoryParts(row).main;
       counts.set(key, (counts.get(key) || 0) + 1);
     });
+    if (currentBlendCategory !== 'all' && !counts.has(currentBlendCategory)) {
+      currentBlendCategory = 'all';
+    }
     list.innerHTML = '';
     [...counts.entries()]
       .sort(([a], [b]) => a === 'all' ? -1 : b === 'all' ? 1 : a.localeCompare(b))
@@ -3541,7 +3522,6 @@ window._deepLinkIntent = null;
   }
 
   function blendApplyFilters() {
-    blendEnsureAscendingVisibility();
     const query = (document.getElementById('blendSearchInput')?.value || '').trim().toLowerCase();
     const readyFilter = document.getElementById('blendReadyFilter')?.value || 'all';
     const sort = document.getElementById('blendSortSelect')?.value || 'id';
@@ -5006,21 +4986,28 @@ window._deepLinkIntent = null;
   }
 
   function blendSelectBlend(blendId, fromUser = false) {
-  selectedBlend = blendAllRows().find(row => String(row.blend_id) === String(blendId)) || null;
-  blendManualSelections = {};   // reset aussi les choix manuels
-  blendOpenChoiceKey = '';
-  // Reset la quantité à 1 pour le nouveau blend
-  const qtyInput = document.getElementById('blendQtyInput');
-  if (qtyInput) qtyInput.value = '1';
-  blendRenderSelected();
-  if (fromUser && isBlendMobileMode()) {
-    blendSetMobileView('recipe');
+    selectedBlend = blendAllRows().find(row => String(row.blend_id) === String(blendId)) || null;
+    if (selectedBlend && blendIsAscendingRow(selectedBlend) && !ascendingHasWalletAccess()) {
+      selectedBlend = null;
+      blendRenderEmptySelection();
+      blendBuildCategoryList();
+      blendApplyFilters();
+      return;
+    }
+    blendManualSelections = {};   // reset aussi les choix manuels
+    blendOpenChoiceKey = '';
+    // Reset la quantité à 1 pour le nouveau blend
+    const qtyInput = document.getElementById('blendQtyInput');
+    if (qtyInput) qtyInput.value = '1';
+    blendRenderSelected();
+    if (fromUser && isBlendMobileMode()) {
+      blendSetMobileView('recipe');
+    }
+    // ── Sync URL
+    if (selectedBlend && isBlendPageActive()) {
+      history.replaceState(null, '', `#blendOrganizer-blend-${selectedBlend.blend_id}`);
+    }
   }
-  // ── Sync URL
-  if (selectedBlend && isBlendPageActive()) {
-    history.replaceState(null, '', `#blendOrganizer-blend-${selectedBlend.blend_id}`);
-  }
-}
 
   function isBlendMobileMode() {
     return window.innerWidth <= MOBILE_MENU_BREAKPOINT;
@@ -5640,7 +5627,10 @@ window._deepLinkIntent = null;
 
   function blendRefreshWalletData() {
     if (!blendLoaded) return;
-    blendEnsureAscendingVisibility();
+    if (selectedBlend && blendIsAscendingRow(selectedBlend) && !ascendingHasWalletAccess()) {
+      selectedBlend = null;
+      blendRenderEmptySelection();
+    }
     blendBuildCategoryList();
     blendApplyFilters();
     if (selectedBlend) blendRenderSelected();
@@ -5664,13 +5654,14 @@ window._deepLinkIntent = null;
   window.updateWalletUi = function() {
     previousUpdateWalletUi();
     blendSyncWalletUi();
-    blendEnsureAscendingVisibility();
-    if (blendLoaded || isBlendPageActive()) {
+    if (selectedBlend && blendIsAscendingRow(selectedBlend) && !ascendingHasWalletAccess()) {
+      selectedBlend = null;
+      blendRenderEmptySelection();
+    }
+    if (blendLoaded || selectedBlend) {
       blendBuildCategoryList();
       blendApplyFilters();
-    }
-    if (selectedBlend) {
-      blendRenderSelected();
+      if (selectedBlend) blendRenderSelected();
     }
   };
 
