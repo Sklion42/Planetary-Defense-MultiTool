@@ -2933,6 +2933,7 @@ window._deepLinkIntent = null;
   const ASCEND_MAX_FRAGMENTS_PER_TX = 50;
   const ASCEND_MEMO_BURN = 'burn';
   const ASCEND_MEMO_ASCEND = 'ascend';
+  const ASCEND_CHAIN_ENABLED = false;
   const BLEND_SCAN_LOWER_BOUND = '40000';
   const BLEND_CACHE_KEY = `pdnft:blends:${COLLECTION}:v1`;
   const ASCENDING_ROWS = [
@@ -3351,6 +3352,14 @@ window._deepLinkIntent = null;
   }
 
   async function ascendingCheckContractReady({ force = false } = {}) {
+    if (!ASCEND_CHAIN_ENABLED) {
+      ascendingContractStatus = {
+        checkedAt: Date.now(),
+        ready: false,
+        detail: `${ASCEND_CONTRACT} chain calls are disabled until the contract is deployed.`
+      };
+      return ascendingContractStatus;
+    }
     const now = Date.now();
     if (!force && now - ascendingContractStatus.checkedAt < 60000) {
       return ascendingContractStatus;
@@ -3377,6 +3386,10 @@ window._deepLinkIntent = null;
   }
 
   async function ascendingEnsureContractReady() {
+    if (!ASCEND_CHAIN_ENABLED) {
+      alert(`${ASCEND_CONTRACT} is in preview mode. Enable ASCEND_CHAIN_ENABLED after deployment before sending NFTs.`);
+      return false;
+    }
     const status = await ascendingCheckContractReady({ force: true });
     if (status.ready) return true;
     alert(`${ASCEND_CONTRACT} is not ready yet. ${status.detail} No NFTs were sent.`);
@@ -3434,6 +3447,17 @@ window._deepLinkIntent = null;
 
   async function ascendingLoadConfig() {
     if (ascendingConfig.loaded) return ascendingConfig;
+    await loadCollectionTemplates();
+    if (!ASCEND_CHAIN_ENABLED) {
+      ascendingConfig = {
+        ...ascendingConfig,
+        loaded: true,
+        contractAvailable: false,
+        configSource: 'fallback',
+        starupMaps: ascendingBuildFallbackStarupMaps()
+      };
+      return ascendingConfig;
+    }
     try {
       await loadCollectionTemplates();
       const [burnConfigs, schemas, starupCosts, starupMaps] = await Promise.all([
@@ -4227,6 +4251,7 @@ window._deepLinkIntent = null;
       !asset.isMissing &&
       !ascendingIsFragment(asset) &&
       ascendingIsCollectionAsset(asset) &&
+      ascendingIsAcceptedSchema(asset) &&
       !!ascendingStarupCostForAsset(asset)
     )));
   }
@@ -4460,6 +4485,65 @@ window._deepLinkIntent = null;
       <div class="blend-ingredient-card-state">#${blendEscape(asset.asset_id || '')}</div>`;
   }
 
+  function ascendingFragmentTemplate() {
+    return blendTemplateMap.get(String(ASCEND_FRAGMENT_TEMPLATE))
+      || collectionTemplates.find(template => String(template?.template_id || '') === String(ASCEND_FRAGMENT_TEMPLATE))
+      || null;
+  }
+
+  function ascendingRenderLargeAssetFrame(asset) {
+    if (!asset) {
+      return `<button class="ascend-nft-frame is-empty" type="button" onclick="blendOpenIngredientPicker(0)">
+        <div class="ascend-card-image-slot"><div class="blend-ingredient-placeholder">NFT</div></div>
+        <div class="ascend-card-name">No NFT selected</div>
+        <div class="ascend-card-meta">Select the NFT to Ascend</div>
+      </button>`;
+    }
+    const img = blendAssetImage(asset);
+    const stars = ascendingStarCount(asset);
+    const rarity = String(getRarity(asset) || ascendingRarity(asset) || '').replace(/[^a-z0-9_-]/gi, '').toLowerCase();
+    return `<button class="ascend-nft-frame" type="button" onclick="blendOpenIngredientPicker(0)">
+      <div class="ascend-card-image-slot">
+        ${img ? `<img src="${blendEscape(img)}" alt="${blendEscape(blendAssetDisplayName(asset))}" loading="lazy">` : '<div class="blend-ingredient-placeholder">NFT</div>'}
+      </div>
+      <div class="ascend-card-name${rarity ? ` rarity-${rarity}` : ''}" title="${blendEscape(blendAssetDisplayName(asset))}">${blendEscape(blendAssetDisplayName(asset))}</div>
+      <div class="ascend-card-meta">${stars} star${stars === 1 ? '' : 's'} - #${blendEscape(asset.asset_id || '')}</div>
+    </button>`;
+  }
+
+  function ascendingRenderTemplateFrame(template, fallbackText = 'Result pending') {
+    if (!template) {
+      return `<div class="ascend-nft-frame is-empty">
+        <div class="ascend-card-image-slot"><div class="blend-ingredient-placeholder">?</div></div>
+        <div class="ascend-card-name">${blendEscape(fallbackText)}</div>
+        <div class="ascend-card-meta">Waiting for mapping</div>
+      </div>`;
+    }
+    const img = blendTemplateImage(template);
+    const stars = ascendingTemplateStarCount(template);
+    const rarity = String(blendTemplateRarity(template) || '').replace(/[^a-z0-9_-]/gi, '').toLowerCase();
+    return `<div class="ascend-nft-frame is-result">
+      <div class="ascend-card-image-slot">
+        ${img ? `<img src="${blendEscape(img)}" alt="${blendEscape(blendTemplateName(template))}" loading="lazy">` : '<div class="blend-ingredient-placeholder">NFT</div>'}
+      </div>
+      <div class="ascend-card-name${rarity ? ` rarity-${rarity}` : ''}" title="${blendEscape(blendTemplateName(template))}">${blendEscape(blendTemplateName(template))}</div>
+      <div class="ascend-card-meta">${stars} star${stars === 1 ? '' : 's'} - Template #${blendEscape(template.template_id || '')}</div>
+    </div>`;
+  }
+
+  function ascendingRenderFragmentFrame(need, selectedCount) {
+    const template = ascendingFragmentTemplate();
+    const img = template ? blendTemplateImage(template) : '';
+    return `<button class="ascend-fragment-frame${selectedCount >= need && need ? '' : ' is-missing'}" type="button" onclick="blendOpenIngredientPicker(1)">
+      <div class="ascend-fragment-image-slot">
+        ${img ? `<img src="${blendEscape(img)}" alt="${template ? blendEscape(blendTemplateName(template)) : 'Fragments'}" loading="lazy">` : '<div class="blend-ingredient-placeholder">FRG</div>'}
+        <span class="blend-ingredient-x">x${need || '?'}</span>
+      </div>
+      <div class="ascend-card-name">${template ? blendEscape(blendTemplateName(template)) : 'Fragments'}</div>
+      <div class="ascend-card-meta">${selectedCount}/${need || 0} selected</div>
+    </button>`;
+  }
+
   function ascendingRenderSacrifice() {
     const preview = document.getElementById('blendPreviewArea');
     if (!preview) return;
@@ -4515,32 +4599,32 @@ window._deepLinkIntent = null;
     const selectedFragments = ascendingGetSelectedFragments();
     const resultTemplate = map ? blendTemplateMap.get(String(map.template_to)) : null;
     const canAscend = getActiveWallet() && nft && cost && map && selectedFragments.length >= need;
+    const resultTitle = resultTemplate ? 'You will receive' : 'Ascended NFT';
+    const fragmentState = need ? `${need} fragments required` : 'Choose an eligible NFT first';
     preview.innerHTML = `
-      <div class="blend-recipe-main">
-        <div class="blend-recipe-list is-compact is-multi">
-          <div class="blend-ingredient-card${nft ? '' : ' is-missing'}" role="button" tabindex="0" onclick="blendOpenIngredientPicker(0)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();blendOpenIngredientPicker(0);}">
-            <div class="blend-ingredient-img-wrap">${ascendingRenderAssetMini(nft, 'NFT')}</div>
-          </div>
-          <div class="blend-ingredient-card${selectedFragments.length >= need && need ? '' : ' is-missing'}" role="button" tabindex="0" onclick="blendOpenIngredientPicker(1)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();blendOpenIngredientPicker(1);}">
-            <div class="blend-ingredient-img-wrap">
-              <div class="blend-ingredient-placeholder">FRG</div>
-              <span class="blend-ingredient-x">x${need || '?'}</span>
+      <div class="blend-recipe-main ascend-flow">
+        <div class="ascend-input-panel">
+          <div class="ascend-panel-title">Ascend Input</div>
+          <div class="ascend-input-grid">
+            <div class="ascend-input-copy">
+              ${ascendingRenderLargeAssetFrame(nft)}
+              <div class="ascend-helper-copy">Select the NFT to Ascend.</div>
             </div>
-            <div class="blend-ingredient-card-title">Fragments</div>
-            <div class="blend-ingredient-card-state">${selectedFragments.length}/${need || 0} selected</div>
+            <div class="ascend-input-copy">
+              ${ascendingRenderFragmentFrame(need, selectedFragments.length)}
+              <div class="ascend-helper-copy">${blendEscape(fragmentState)}</div>
+            </div>
           </div>
         </div>
-        <div class="blend-ingredient-card${resultTemplate ? '' : ' is-missing'}">
-          <div class="blend-ingredient-img-wrap">
-            ${resultTemplate && blendTemplateImage(resultTemplate) ? `<img src="${blendEscape(blendTemplateImage(resultTemplate))}" alt="${blendEscape(blendTemplateName(resultTemplate))}" loading="lazy">` : '<div class="blend-ingredient-placeholder">?</div>'}
-          </div>
-          <div class="blend-ingredient-card-title">${resultTemplate ? blendEscape(blendTemplateName(resultTemplate)) : 'Result template unavailable'}</div>
-          <div class="blend-ingredient-card-state">${map ? `Template #${blendEscape(map.template_to)}` : 'Missing star-up mapping'}</div>
+        <div class="ascend-output-panel">
+          <div class="ascend-panel-title">${blendEscape(resultTitle)}</div>
+          ${ascendingRenderTemplateFrame(resultTemplate, map ? `Template #${map.template_to}` : 'Result mapping needed')}
+          <div class="ascend-helper-copy">${map ? `Mapped from STARUP_MAPPINGS: #${blendEscape(map.template_from)} to #${blendEscape(map.template_to)}` : 'Select a mapped NFT to preview the reward.'}</div>
         </div>
       </div>
       <div class="blend-recipe-footer">
         <div class="blend-action-box">
-          <div><label>Ascend selected NFT</label><div class="blend-ingredient-sub">${need ? `${need} fragments required` : 'Select an eligible NFT'}</div></div>
+          <div><label>Ascend selected NFT</label><div class="blend-ingredient-sub">${blendEscape(fragmentState)}</div></div>
           ${canAscend ? '<button class="market-link" type="button" onclick="blendExecuteSelected()">Ascend</button>' : '<button class="market-link" type="button" disabled>Ascend</button>'}
         </div>
       </div>`;
@@ -4722,7 +4806,8 @@ window._deepLinkIntent = null;
       return;
     }
 
-    const groupedCandidates = blendPickerState.mode === 'sacrifice'
+    const groupAscendingBySchema = blendPickerState.mode === 'sacrifice' || blendPickerState.mode === 'ascendNft';
+    const groupedCandidates = groupAscendingBySchema
       ? candidates.reduce((groups, asset) => {
           const key = `${formatSchemaName(getAssetSchemaName(asset))} / ${ascendingRarity(asset) || 'Unknown'}`;
           if (!groups[key]) groups[key] = [];
