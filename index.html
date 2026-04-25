@@ -2927,10 +2927,12 @@ window._deepLinkIntent = null;
   const BLEND_PAGE_ID = 'blendPage';
   const BLEND_CONTRACT = 'blend.nefty';
   const ATOMIC_CONTRACT = 'atomicassets';
-  const ASCEND_CONTRACT = 'pdblend';
+  const ASCEND_CONTRACT = 'blend.pdef';
   const ASCENDING_ALLOWED_WALLET = 'zmnma.c.wam';
   const ASCEND_FRAGMENT_TEMPLATE = '888509';
   const ASCEND_MAX_FRAGMENTS_PER_TX = 50;
+  const ASCEND_MEMO_BURN = 'burn';
+  const ASCEND_MEMO_ASCEND = 'ascend';
   const BLEND_SCAN_LOWER_BOUND = '40000';
   const BLEND_CACHE_KEY = `pdnft:blends:${COLLECTION}:v1`;
   const ASCENDING_ROWS = [
@@ -3011,10 +3013,17 @@ window._deepLinkIntent = null;
   let blendPickerState = null;
   let ascendingConfig = {
     loaded: false,
+    contractAvailable: false,
+    configSource: 'fallback',
     burnConfigs: ASCEND_FALLBACK_BURN_CONFIGS,
     schemas: ASCEND_FALLBACK_SCHEMAS,
     starupCosts: ASCEND_FALLBACK_STARUP_COSTS,
     starupMaps: []
+  };
+  let ascendingContractStatus = {
+    checkedAt: 0,
+    ready: false,
+    detail: 'Contract has not been checked yet.'
   };
   let sacrificeSelectedIds = [];
   let ascendSelectedNftId = '';
@@ -3335,25 +3344,125 @@ window._deepLinkIntent = null;
     return Array.isArray(response?.rows) ? response.rows : [];
   }
 
+  async function ascendingFetchContractAccount() {
+    return blendFetchRpc('/v1/chain/get_account', {
+      account_name: ASCEND_CONTRACT
+    });
+  }
+
+  async function ascendingCheckContractReady({ force = false } = {}) {
+    const now = Date.now();
+    if (!force && now - ascendingContractStatus.checkedAt < 60000) {
+      return ascendingContractStatus;
+    }
+    try {
+      const account = await ascendingFetchContractAccount();
+      const codeHash = String(account?.code_hash || '').trim();
+      const hasCode = !!codeHash && !/^0+$/.test(codeHash);
+      ascendingContractStatus = {
+        checkedAt: now,
+        ready: hasCode,
+        detail: hasCode
+          ? `Contract code detected on ${ASCEND_CONTRACT}.`
+          : `${ASCEND_CONTRACT} exists but no contract code is deployed yet.`
+      };
+    } catch (error) {
+      ascendingContractStatus = {
+        checkedAt: now,
+        ready: false,
+        detail: `${ASCEND_CONTRACT} is not reachable on-chain yet.`
+      };
+    }
+    return ascendingContractStatus;
+  }
+
+  async function ascendingEnsureContractReady() {
+    const status = await ascendingCheckContractReady({ force: true });
+    if (status.ready) return true;
+    alert(`${ASCEND_CONTRACT} is not ready yet. ${status.detail} No NFTs were sent.`);
+    return false;
+  }
+
+  function ascendingTemplateData(template) {
+    return template?.immutable_data || {};
+  }
+
+  function ascendingTemplateStarCount(template) {
+    return getStarInfo(ascendingTemplateData(template)).count;
+  }
+
+  function ascendingTemplateBaseName(template) {
+    const raw = String(ascendingTemplateData(template).name || template?.name || '').trim();
+    return raw
+      .replace(/⭐+/g, '')
+      .replace(/\s+\d+\s*stars?$/i, '')
+      .replace(/\s+star\s*\d+$/i, '')
+      .replace(/\s+#?\d+\s*$/i, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  function ascendingTemplateMapKey(template, stars) {
+    const data = ascendingTemplateData(template);
+    return [
+      String(template?.schema?.schema_name || template?.schema_name || '').trim().toLowerCase(),
+      ascendingTemplateBaseName(template),
+      String(data.rarity || data.Rarity || '').trim().toLowerCase(),
+      String(data.type || data.Type || data.unit_type || data.UnitType || data.class || data.Class || '').trim().toLowerCase(),
+      Number(stars || 0)
+    ].join('::');
+  }
+
+  function ascendingBuildFallbackStarupMaps() {
+    const byKey = new Map();
+    collectionTemplates.forEach(template => {
+      byKey.set(ascendingTemplateMapKey(template, ascendingTemplateStarCount(template)), template);
+    });
+    return collectionTemplates
+      .map(template => {
+        const fromStars = ascendingTemplateStarCount(template);
+        const target = byKey.get(ascendingTemplateMapKey(template, fromStars + 1));
+        if (!target) return null;
+        return {
+          template_from: Number(template.template_id),
+          template_to: Number(target.template_id),
+          inferred: true
+        };
+      })
+      .filter(Boolean);
+  }
+
   async function ascendingLoadConfig() {
     if (ascendingConfig.loaded) return ascendingConfig;
     try {
+      await loadCollectionTemplates();
       const [burnConfigs, schemas, starupCosts, starupMaps] = await Promise.all([
         ascendingFetchTable('burnconfigs'),
         ascendingFetchTable('schemas'),
         ascendingFetchTable('starupcosts'),
-        ascendingFetchTable('starupmaps')
+        ascendingFetchTable('starupmaps'),
+        ascendingCheckContractReady()
       ]);
+      const fallbackMaps = starupMaps.length ? starupMaps : ascendingBuildFallbackStarupMaps();
       ascendingConfig = {
         loaded: true,
+        contractAvailable: ascendingContractStatus.ready,
+        configSource: starupMaps.length ? 'chain' : 'fallback',
         burnConfigs: burnConfigs.length ? burnConfigs : ASCEND_FALLBACK_BURN_CONFIGS,
         schemas: schemas.length ? schemas.map(row => String(row.schema_name || '')).filter(Boolean) : ASCEND_FALLBACK_SCHEMAS,
         starupCosts: starupCosts.length ? starupCosts : ASCEND_FALLBACK_STARUP_COSTS,
-        starupMaps
+        starupMaps: fallbackMaps
       };
     } catch (error) {
       console.warn('Ascending config unavailable, using local fallback.', error);
-      ascendingConfig = { ...ascendingConfig, loaded: true };
+      try { await loadCollectionTemplates(); } catch (_) {}
+      ascendingConfig = {
+        ...ascendingConfig,
+        loaded: true,
+        contractAvailable: false,
+        configSource: 'fallback',
+        starupMaps: ascendingBuildFallbackStarupMaps()
+      };
     }
     return ascendingConfig;
   }
@@ -4790,8 +4899,9 @@ window._deepLinkIntent = null;
             <div class="blend-info-tile"><div class="blend-info-label">Batch limit</div><div class="blend-info-value">${ASCEND_MAX_FRAGMENTS_PER_TX}</div></div>
             <div class="blend-info-tile"><div class="blend-info-label">Transactions</div><div class="blend-info-value">${Math.max(1, batches.length)}</div></div>
             <div class="blend-info-tile"><div class="blend-info-label">Contract</div><div class="blend-info-value">${blendEscape(ASCEND_CONTRACT)}</div></div>
+            <div class="blend-info-tile"><div class="blend-info-label">Config</div><div class="blend-info-value">${ascendingConfig.configSource === 'chain' ? 'On-chain' : 'Local preview'}</div></div>
           </div>
-          <div class="desc-block"><div class="desc-title">Flow</div><div class="blend-desc"><p>Eligible 0-star NFTs are sent to the contract with memo burn. The contract burns them and mints fragments from the on-chain rarity config.</p></div></div>`;
+          <div class="desc-block"><div class="desc-title">Flow</div><div class="blend-desc"><p>Eligible 0-star NFTs are sent to ${blendEscape(ASCEND_CONTRACT)} with memo ${blendEscape(ASCEND_MEMO_BURN)}. The contract burns them and mints fragments from the rarity config.</p></div></div>`;
         return;
       }
       const nft = ascendingGetSelectedNft();
@@ -4807,8 +4917,10 @@ window._deepLinkIntent = null;
           <div class="blend-info-tile"><div class="blend-info-label">Selected fragments</div><div class="blend-info-value">${ascendingGetSelectedFragments().length}</div></div>
           <div class="blend-info-tile"><div class="blend-info-label">Result</div><div class="blend-info-value">${map ? `Template #${blendEscape(map.template_to)}` : '-'}</div></div>
           <div class="blend-info-tile"><div class="blend-info-label">Preview</div><div class="blend-info-value">${resultTemplate ? blendEscape(blendTemplateName(resultTemplate)) : 'Mapping needed'}</div></div>
+          <div class="blend-info-tile"><div class="blend-info-label">Contract</div><div class="blend-info-value">${blendEscape(ASCEND_CONTRACT)}</div></div>
+          <div class="blend-info-tile"><div class="blend-info-label">Config</div><div class="blend-info-value">${map?.inferred ? 'Local preview' : 'On-chain'}</div></div>
         </div>
-        <div class="desc-block"><div class="desc-title">Flow</div><div class="blend-desc"><p>The selected NFT and required fragments are sent together with memo ascend. The contract burns the inputs and mints the mapped next-star template.</p></div></div>`;
+        <div class="desc-block"><div class="desc-title">Flow</div><div class="blend-desc"><p>The selected NFT and required fragments are sent together to ${blendEscape(ASCEND_CONTRACT)} with memo ${blendEscape(ASCEND_MEMO_ASCEND)}. The contract burns the inputs and mints the mapped next-star template.</p></div></div>`;
       return;
     }
     const display = blendParseDisplayData(row);
@@ -5358,6 +5470,7 @@ window._deepLinkIntent = null;
       alert('Select at least one NFT to sacrifice.');
       return;
     }
+    if (!await ascendingEnsureContractReady()) return;
     if (!confirm(`Sacrifice ${summary.assets.length} NFT${summary.assets.length > 1 ? 's' : ''} in ${batches.length} transaction${batches.length > 1 ? 's' : ''}?`)) return;
     blendOpenResultModal({ expectedCount: summary.max, blendLabel: 'Sacrifice' });
     try {
@@ -5376,7 +5489,7 @@ window._deepLinkIntent = null;
               from: wallet,
               to: ASCEND_CONTRACT,
               asset_ids: batch.map(asset => String(asset.asset_id)),
-              memo: 'burn'
+              memo: ASCEND_MEMO_BURN
             }
           }]
         }, { blocksBehind: 3, expireSeconds: 120 });
@@ -5413,6 +5526,7 @@ window._deepLinkIntent = null;
       blendRenderSelected();
       return;
     }
+    if (!await ascendingEnsureContractReady()) return;
     if (!confirm(`Ascend ${blendAssetDisplayName(nft)} using ${need} fragments?`)) return;
     const beforeAssetIds = new Set(ownedAssets.map(asset => String(asset.asset_id || '')).filter(Boolean));
     try {
@@ -5426,7 +5540,7 @@ window._deepLinkIntent = null;
             from: wallet,
             to: ASCEND_CONTRACT,
             asset_ids: [String(nft.asset_id), ...fragments.map(asset => String(asset.asset_id))],
-            memo: 'ascend'
+            memo: ASCEND_MEMO_ASCEND
           }
         }]
       }, { blocksBehind: 3, expireSeconds: 120 });
