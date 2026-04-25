@@ -11,7 +11,7 @@
     --purple:     #8e44ad;
     --purple-bright: #a855f7;
     --text:       #e8e0d8;
-    --text-dim:   #7a7070;
+    --text-dim:   #51a0b1;
     --text-mid:   #b0a8a0;
     --gold:       #f0c060;
     --star-off:   #3a2a2a;
@@ -976,6 +976,7 @@
     background: linear-gradient(90deg, #155a7f, #22a7d8, #155a7f);
     box-shadow: 0 0 14px rgba(34, 167, 216, 0.22);
     transition: filter .2s, box-shadow .2s;
+    border: none;
   }
   .market-link:hover {
     filter: brightness(1.12);
@@ -984,7 +985,7 @@
   .market-link[aria-disabled="true"],
   .market-link:disabled {
     background: rgba(80, 92, 100, 0.25);
-    color: var(--text-dim);
+    color: var(--text-mid);
     clip-path: none;
     box-shadow: none;
     cursor: default;
@@ -3083,7 +3084,7 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--text);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
   }
   .ascend-card-meta {
@@ -3186,7 +3187,7 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--text);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
   }
   .sacrifice-selected-meta {
@@ -3721,7 +3722,7 @@ body {
   }
   .blend-info-label {
     color: var(--text-dim);
-    font-size: 10px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 1px;
   }
@@ -3894,7 +3895,7 @@ body {
       padding: 6px;
     }
     .ascend-card-name {
-      font-size: 10px;
+      font-size: 13px;
       margin-top: 5px;
     }
     .ascend-card-meta,
@@ -3926,7 +3927,7 @@ body {
       height: 38px;
     }
     .sacrifice-selected-name {
-      font-size: 10px;
+      font-size: 13px;
     }
     .sacrifice-selected-meta {
       font-size: 10px;
