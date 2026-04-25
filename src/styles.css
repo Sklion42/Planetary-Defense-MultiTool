@@ -3006,7 +3006,7 @@ body {
     padding: clamp(8px, 1.3vh, 12px);
   }
   .ascend-output-panel {
-    width: min(100%, 440px);
+    width: min(100%, 780px);
     margin-inline: auto;
   }
   .ascend-panel-title {
@@ -3030,7 +3030,7 @@ body {
   }
   .ascend-input-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(130px, 0.7fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(8px, 1.4vw, 14px);
     align-items: stretch;
   }
@@ -3051,6 +3051,10 @@ body {
     display: flex;
     flex-direction: column;
     text-align: center;
+  }
+  .ascend-output-panel .ascend-nft-frame {
+    width: min(100%, 383px);
+    margin-inline: auto;
   }
   button.ascend-nft-frame,
   button.ascend-fragment-frame {
