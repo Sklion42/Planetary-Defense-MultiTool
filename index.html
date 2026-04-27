@@ -2026,7 +2026,7 @@ window._deepLinkIntent = null;
   const parts = raw.split('-');
   const pageHash = parts[0].toLowerCase();
   const subView = parts[1] || '';
-  const extraId = parts[2] || '';
+  const extraId = parts.slice(2).join('-') || '';
 
   const targetPage = HASH_PAGE_MAP[pageHash] || 'menuPage';
   showAppPage(targetPage);
@@ -2939,10 +2939,10 @@ window._deepLinkIntent = null;
   const BLEND_CACHE_KEY = `pdnft:blends:${COLLECTION}:v1`;
   const ASCENDING_ROWS = [
     {
-      blend_id: 'ascending-sacrifice',
+      blend_id: 'sacrifice',
       isAscending: true,
       ascendingMode: 'sacrifice',
-      category: 'Ascending - Sacrifice',
+      category: 'Ascending',
       display_data: {
         name: 'Sacrifice',
         image: '/img/UI/sacrifice.png',
@@ -2950,10 +2950,10 @@ window._deepLinkIntent = null;
       }
     },
     {
-      blend_id: 'ascending-ascend',
+      blend_id: 'ascend',
       isAscending: true,
       ascendingMode: 'ascend',
-      category: 'Ascending - Ascend',
+      category: 'Ascending',
       display_data: {
         name: 'Ascend',
         image: '/img/UI/ascend.png',
@@ -3300,7 +3300,7 @@ window._deepLinkIntent = null;
     return {
       raw,
       main: parts[0] || raw,
-      sub: parts.slice(1).join(' - ') || 'General'
+      sub: parts.slice(1).join(' - ')
     };
   }
 
@@ -3532,9 +3532,9 @@ window._deepLinkIntent = null;
     blendApplyFilters();
     const intent = window._deepLinkIntent;
     if (intent?.page === 'blend') {
-      window._deepLinkIntent = null;
       const match = blendAllRows().find(r => String(r.blend_id) === intent.id);
       if (match) {
+        window._deepLinkIntent = null;
         blendSelectBlend(match.blend_id);
         if (intent.view === 'recipe' && isBlendMobileMode()) {
           blendSetMobileView('recipe');
@@ -3850,6 +3850,31 @@ window._deepLinkIntent = null;
         heading.textContent = mainGroup.main;
         list.appendChild(heading);
 
+        const renderBlendRow = (row, group, target) => {
+          const availability = blendIsAscendingRow(row) ? ascendingGetAvailability(row) : blendGetAvailability(row, 1);
+          const img = blendImage(row);
+          const button = document.createElement('button');
+          const rowSub = blendIsAscendingRow(row) ? 'Smart contract flow' : `#${row.blend_id}`;
+          const subLabel = group.parts.sub ? ` - ${blendEscape(group.parts.sub)}` : '';
+          button.type = 'button';
+          button.className = `blend-row${String(selectedBlend?.blend_id || '') === String(row.blend_id) ? ' selected' : ''}`;
+          button.onclick = () => blendSelectBlend(row.blend_id, true);
+          button.innerHTML = `
+            ${img ? `<img class="blend-row-thumb" src="${blendEscape(img)}" alt="${blendEscape(blendName(row))}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+            <div class="blend-row-placeholder" style="${img ? 'display:none' : ''}">${blendIsAscendingRow(row) ? 'ASC' : 'BLD'}</div>
+            <div>
+              <div class="blend-row-title">${blendEscape(blendName(row))}</div>
+              <div class="blend-row-sub">${rowSub}${subLabel}</div>
+            </div>
+            <span class="blend-ready-badge${availability.maxCopies > 0 ? '' : ' is-missing'}">${availability.maxCopies > 0 ? `x${availability.maxCopies}` : 'Missing'}</span>`;
+          target.appendChild(button);
+        };
+
+        if (mainGroup.subgroups.size === 1 && mainGroup.subgroups.has('')) {
+          mainGroup.subgroups.get('').rows.forEach(row => renderBlendRow(row, mainGroup.subgroups.get(''), list));
+          return;
+        }
+
         [...mainGroup.subgroups.values()]
           .sort((a, b) => a.parts.sub.localeCompare(b.parts.sub))
           .forEach(group => {
@@ -3873,21 +3898,7 @@ window._deepLinkIntent = null;
             const itemsWrap = document.createElement('div');
             itemsWrap.className = `item-type-items${subCollapsed ? ' is-collapsed' : ''}`;
             group.rows.forEach(row => {
-              const availability = blendIsAscendingRow(row) ? ascendingGetAvailability(row) : blendGetAvailability(row, 1);
-              const img = blendImage(row);
-              const button = document.createElement('button');
-              button.type = 'button';
-              button.className = `blend-row${String(selectedBlend?.blend_id || '') === String(row.blend_id) ? ' selected' : ''}`;
-              button.onclick = () => blendSelectBlend(row.blend_id, true);
-              button.innerHTML = `
-                ${img ? `<img class="blend-row-thumb" src="${blendEscape(img)}" alt="${blendEscape(blendName(row))}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-                <div class="blend-row-placeholder" style="${img ? 'display:none' : ''}">${blendIsAscendingRow(row) ? 'ASC' : 'BLD'}</div>
-                <div>
-                  <div class="blend-row-title">${blendEscape(blendName(row))}</div>
-                  <div class="blend-row-sub">${blendIsAscendingRow(row) ? 'Smart contract flow' : `#${row.blend_id}`} - ${blendEscape(group.parts.sub)}</div>
-                </div>
-                <span class="blend-ready-badge${availability.maxCopies > 0 ? '' : ' is-missing'}">${availability.maxCopies > 0 ? `x${availability.maxCopies}` : 'Missing'}</span>`;
-              itemsWrap.appendChild(button);
+              renderBlendRow(row, group, itemsWrap);
             });
 
             section.appendChild(itemsWrap);
