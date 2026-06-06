@@ -3265,12 +3265,13 @@ window._deepLinkIntent = null;
     return blendPossibleOutcomes(row).length > 1;
   }
 
-  function ascendingHasWalletAccess() {
+  function ascendingHasWalletAccess(row) {
+    if (row?.ascendingMode === 'sacrifice') return true;
     return String(getActiveWallet() || '').trim().toLowerCase() === ASCENDING_ALLOWED_WALLET;
   }
 
   function blendAllRows() {
-    return ascendingHasWalletAccess() ? [...ASCENDING_ROWS, ...blendRows] : [...blendRows];
+    return [...ASCENDING_ROWS.filter(row => ascendingHasWalletAccess(row)), ...blendRows];
   }
 
   function blendIsAscendingRow(row) {
@@ -5340,7 +5341,7 @@ window._deepLinkIntent = null;
 
   function blendSelectBlend(blendId, fromUser = false) {
     selectedBlend = blendAllRows().find(row => String(row.blend_id) === String(blendId)) || null;
-    if (selectedBlend && blendIsAscendingRow(selectedBlend) && !ascendingHasWalletAccess()) {
+    if (selectedBlend && blendIsAscendingRow(selectedBlend) && !ascendingHasWalletAccess(selectedBlend)) {
       selectedBlend = null;
       blendRenderEmptySelection();
       blendBuildCategoryList();
@@ -6030,7 +6031,7 @@ window._deepLinkIntent = null;
 
   function blendRefreshWalletData() {
     if (!blendLoaded) return;
-    if (selectedBlend && blendIsAscendingRow(selectedBlend) && !ascendingHasWalletAccess()) {
+    if (selectedBlend && blendIsAscendingRow(selectedBlend) && !ascendingHasWalletAccess(selectedBlend)) {
       selectedBlend = null;
       blendRenderEmptySelection();
     }
@@ -6057,7 +6058,7 @@ window._deepLinkIntent = null;
   window.updateWalletUi = function() {
     previousUpdateWalletUi();
     blendSyncWalletUi();
-    if (selectedBlend && blendIsAscendingRow(selectedBlend) && !ascendingHasWalletAccess()) {
+    if (selectedBlend && blendIsAscendingRow(selectedBlend) && !ascendingHasWalletAccess(selectedBlend)) {
       selectedBlend = null;
       blendRenderEmptySelection();
     }
