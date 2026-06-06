@@ -3370,7 +3370,15 @@ window._deepLinkIntent = null;
     try {
       const account = await ascendingFetchContractAccount();
       const codeHash = String(account?.code_hash || '').trim();
-      const hasCode = !!codeHash && !/^0+$/.test(codeHash);
+      let hasCode = !!codeHash && !/^0+$/.test(codeHash);
+      if (!hasCode) {
+        // Some WAX nodes omit or zero-out code_hash even when code is deployed.
+        // Fallback: if the burnconfigs table responds, the contract is running.
+        try {
+          const rows = await ascendingFetchTable('burnconfigs');
+          if (Array.isArray(rows)) hasCode = true;
+        } catch (_) {}
+      }
       ascendingContractStatus = {
         checkedAt: now,
         ready: hasCode,
