@@ -5535,7 +5535,7 @@ window._deepLinkIntent = null;
         <button class="market-link" type="button" onclick="window.ascendingReclaim('${blendEscape(String(req.requestId))}')">Reclaim NFTs</button>
       </div>`).join('');
       return `<div class="blend-result-empty">
-        <div class="status-msg">Your NFTs are safe in escrow on ${blendEscape(ASCEND_CONTRACT)}, but the result hasn't been delivered yet. It may still arrive shortly &mdash; sync your inventory in a moment. If it never resolves, you can reclaim your NFTs after the contract's 1h timeout.</div>
+        <div class="status-msg">Your NFTs are safe in escrow on ${blendEscape(ASCEND_CONTRACT)}, but the result hasn't been delivered yet. It may still arrive shortly &mdash; sync your inventory in a moment. If it never resolves, you can reclaim your NFTs after the contract's 10min timeout.</div>
         <div class="blend-result-pending-list">${rows}</div>
       </div>`;
     }
@@ -5839,12 +5839,12 @@ window._deepLinkIntent = null;
   }
 
   // Récupère les NFT d'une requête restée en escrow. Le contrat n'autorise le
-  // reclaim côté joueur qu'après le timeout on-chain (1h).
+  // reclaim côté joueur qu'après le timeout on-chain (10min).
   async function ascendingReclaim(requestId) {
     const wallet = getActiveWallet();
     const permission = blendGetPermission();
     if (!wallet) { openWalletModal(); return; }
-    if (!confirm(`Reclaim the NFTs from request #${requestId}? This only succeeds after the contract's 1h timeout if no result was delivered.`)) return;
+    if (!confirm(`Reclaim the NFTs from request #${requestId}? This only succeeds after the contract's 10min timeout if no result was delivered.`)) return;
     try {
       const result = await transactWithActiveWallet({
         actions: [{
@@ -5870,7 +5870,7 @@ window._deepLinkIntent = null;
       if (typeof blendRenderSelected === 'function') blendRenderSelected();
     } catch (error) {
       console.error(error);
-      alert(`Reclaim failed: ${error?.message || error}\n(Reclaim is only allowed after the contract's 1h timeout.)`);
+      alert(`Reclaim failed: ${error?.message || error}\n(Reclaim is only allowed after the contract's 10min timeout.)`);
     }
   }
 
