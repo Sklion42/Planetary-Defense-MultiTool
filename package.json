@@ -11,6 +11,7 @@
     "@wharfkit/session": "^1.6.1",
     "@wharfkit/wallet-plugin-anchor": "^1.6.1",
     "@wharfkit/wallet-plugin-cloudwallet": "^1.6.4",
+    "@wharfkit/wallet-plugin-privatekey": "^1.1.0",
     "@wharfkit/wallet-plugin-wombat": "^1.5.1",
     "@wharfkit/web-renderer": "^1.4.3"
   },
