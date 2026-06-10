@@ -3030,6 +3030,7 @@ window._deepLinkIntent = null;
     detail: 'Contract has not been checked yet.'
   };
   let sacrificeSelectedIds = [];
+  let ascendingPendingRequests = [];
   let ascendSelectedNftId = '';
   let ascendSelectedFragmentIds = [];
   let blendMobileView = 'organizer';
@@ -5422,7 +5423,15 @@ window._deepLinkIntent = null;
     blendRenderResultModal();
   }
 
+  // La modal résultat n'est fermable qu'une fois la résolution terminée
+  // (reveal ou reclaim). Pendant 'waiting', aucune fermeture possible :
+  // ni Close, ni clic extérieur, ni touche Échap.
+  function blendResultIsDismissible() {
+    return blendResultState.status !== 'waiting';
+  }
+
   function blendCloseResultModal() {
+    if (!blendResultIsDismissible()) return;
     const modal = document.getElementById('blendResultModal');
     if (modal) {
       modal.classList.remove('is-open');
@@ -5466,6 +5475,10 @@ window._deepLinkIntent = null;
     } else {
       txLink.hidden = true;
     }
+
+    // Verrou visuel : pas de bouton Close tant que la résolution n'est pas finie.
+    const closeBtn = document.getElementById('blendResultCloseBtn');
+    if (closeBtn) closeBtn.hidden = !blendResultIsDismissible();
 
     if (blendResultState.status === 'error') {
       body.innerHTML = `<div class="blend-result-empty"><div class="status-msg" style="color:#e74c3c">${blendEscape(blendResultState.message || 'Blend failed.')}</div></div>`;
@@ -5514,6 +5527,16 @@ window._deepLinkIntent = null;
           <div class="blend-result-fragment-name">${blendEscape(name)}</div>
           <div class="blend-result-fragment-meta">${count ? 'Fragments received' : 'Expected fragment range'}</div>
         </div>
+      </div>`;
+    }
+    if (result.type === 'pending-timeout') {
+      const rows = (result.requests || []).map(req => `<div class="blend-result-pending-row">
+        <span>Request #${blendEscape(String(req.requestId))}</span>
+        <button class="market-link" type="button" onclick="window.ascendingReclaim('${blendEscape(String(req.requestId))}')">Reclaim NFTs</button>
+      </div>`).join('');
+      return `<div class="blend-result-empty">
+        <div class="status-msg">Your NFTs are safe in escrow on ${blendEscape(ASCEND_CONTRACT)}, but the result hasn't been delivered yet. It may still arrive shortly &mdash; sync your inventory in a moment. If it never resolves, you can reclaim your NFTs after the contract's 1h timeout.</div>
+        <div class="blend-result-pending-list">${rows}</div>
       </div>`;
     }
     return `<div class="blend-result-empty"><div class="status-msg">${blendEscape(result.message || 'Result ready.')}</div></div>`;
@@ -5732,6 +5755,125 @@ window._deepLinkIntent = null;
     return activeWalletPermission || 'active';
   }
 
+  // ── Commit-reveal helpers (sacrifice flow) ──────────────────────────────
+  // SÉCURITÉ : aucune graine n'est générée ni connue ici. Le front ne fait que
+  // (1) committer le burn (transfer memo "burn"), (2) lire le request_id renvoyé
+  // par l'action logburn dans la trace, (3) attendre que le backend résolve via
+  // reveal(). La seed imprévisible est générée exclusivement côté backend.
+
+  // Lit le request_id (+ fourchette garantie/max) depuis l'action ASCEND_CONTRACT::logburn
+  // présente dans la trace de la tx de commit.
+  function ascendingExtractRequestId(result) {
+    let found = null;
+    const seen = new WeakSet();
+    const visit = (node, depth = 0) => {
+      if (!node || found || depth > 32) return;
+      if (Array.isArray(node)) { node.forEach(item => visit(item, depth + 1)); return; }
+      if (typeof node !== 'object') return;
+      if (seen.has(node)) return;
+      seen.add(node);
+      const act = node.act;
+      if (String(act?.account || '') === ASCEND_CONTRACT && String(act?.name || '') === 'logburn') {
+        const data = act.data || {};
+        found = {
+          requestId: String(data.request_id ?? ''),
+          guaranteed: Number(data.guaranteed_total || 0),
+          max: Number(data.max_total || 0)
+        };
+        return;
+      }
+      Object.values(node).forEach(value => visit(value, depth + 1));
+    };
+    visit(result);
+    return found;
+  }
+
+  // True tant que la requête est encore en escrow (pas encore révélée ni reclaim).
+  async function ascendingPendingRowExists(requestId) {
+    const id = String(requestId);
+    const response = await blendFetchRpc('/v1/chain/get_table_rows', {
+      json: true,
+      code: ASCEND_CONTRACT,
+      scope: ASCEND_CONTRACT,
+      table: 'pendingburns',
+      lower_bound: id,
+      upper_bound: id,
+      limit: 1,
+      reverse: false,
+      show_payer: false
+    });
+    return Array.isArray(response?.rows) && response.rows.length > 0;
+  }
+
+  // Attend la résolution on-chain de toutes les requêtes committées.
+  async function ascendingWaitForReveal(pending, { beforeFragmentIds }) {
+    const ids = pending.map(p => String(p.requestId)).filter(Boolean);
+    if (ids.length) {
+      const remaining = new Set(ids);
+      const maxAttempts = 90; // ~ jusqu'à 3 min de suivi
+      for (let attempt = 0; attempt < maxAttempts && remaining.size; attempt += 1) {
+        for (const id of [...remaining]) {
+          try {
+            if (!(await ascendingPendingRowExists(id))) remaining.delete(id);
+          } catch (_) { /* erreur RPC ponctuelle : on retente */ }
+        }
+        if (!remaining.size) break;
+        blendSetResultState({
+          status: 'waiting',
+          message: `Resolving sacrifice on-chain... (${ids.length - remaining.size}/${ids.length})`
+        });
+        await blendDelay(attempt < 8 ? 1500 : 3000);
+      }
+      if (remaining.size) {
+        const error = new Error('reveal-timeout');
+        error.pendingTimeout = true;
+        error.pendingRequests = pending.filter(p => remaining.has(String(p.requestId)));
+        throw error;
+      }
+    } else {
+      // Pas de request_id (contrat sans logburn ?) : court délai puis diff inventaire.
+      await blendDelay(2500);
+    }
+    await syncWalletData();
+    return ascendingFragmentsOwned().filter(asset => !beforeFragmentIds.has(String(asset.asset_id || ''))).length;
+  }
+
+  // Récupère les NFT d'une requête restée en escrow. Le contrat n'autorise le
+  // reclaim côté joueur qu'après le timeout on-chain (1h).
+  async function ascendingReclaim(requestId) {
+    const wallet = getActiveWallet();
+    const permission = blendGetPermission();
+    if (!wallet) { openWalletModal(); return; }
+    if (!confirm(`Reclaim the NFTs from request #${requestId}? This only succeeds after the contract's 1h timeout if no result was delivered.`)) return;
+    try {
+      const result = await transactWithActiveWallet({
+        actions: [{
+          account: ASCEND_CONTRACT,
+          name: 'reclaim',
+          authorization: [{ actor: wallet, permission }],
+          data: { request_id: Number(requestId) }
+        }]
+      }, { blocksBehind: 3, expireSeconds: 120 });
+      const txid = blendExtractTransactionId(result);
+      await syncWalletData();
+      blendSetResultState({
+        status: 'ready',
+        txid,
+        customResult: {
+          type: 'message',
+          title: 'Reclaimed',
+          subtitle: 'NFTs returned to your wallet',
+          message: `The NFTs from request #${requestId} have been returned to your wallet.`
+        },
+        message: ''
+      });
+      if (typeof blendRenderSelected === 'function') blendRenderSelected();
+    } catch (error) {
+      console.error(error);
+      alert(`Reclaim failed: ${error?.message || error}\n(Reclaim is only allowed after the contract's 1h timeout.)`);
+    }
+  }
+
   async function ascendingExecuteSacrifice() {
     const wallet = getActiveWallet();
     const permission = blendGetPermission();
@@ -5743,16 +5885,17 @@ window._deepLinkIntent = null;
     }
     if (!await ascendingEnsureContractReady()) return;
     if (!confirm(`Sacrifice ${summary.assets.length} NFT${summary.assets.length > 1 ? 's' : ''} in ${batches.length} transaction${batches.length > 1 ? 's' : ''}?`)) return;
-    const beforeAssetIds = new Set(ownedAssets.map(asset => String(asset.asset_id || '')).filter(Boolean));
-    const traceAssetIds = [];
+    const beforeFragmentIds = new Set(ascendingFragmentsOwned().map(asset => String(asset.asset_id || '')).filter(Boolean));
+    const pending = [];
     let lastTxid = '';
     blendOpenResultModal({ expectedCount: summary.max, blendLabel: 'Sacrifice' });
     try {
+      // PHASE 1 — COMMIT : on envoie les NFT en escrow. Pas de résultat ici.
       for (let index = 0; index < batches.length; index += 1) {
         const batch = batches[index];
         blendSetResultState({
           status: 'waiting',
-          message: `Sending sacrifice transaction ${index + 1}/${batches.length}...`
+          message: `Committing sacrifice ${index + 1}/${batches.length}...`
         });
         const result = await transactWithActiveWallet({
           actions: [{
@@ -5769,18 +5912,30 @@ window._deepLinkIntent = null;
         }, { blocksBehind: 3, expireSeconds: 120 });
         const txid = blendExtractTransactionId(result);
         lastTxid = txid || lastTxid;
-        traceAssetIds.push(...blendExtractMintedAssetIds(result, wallet));
+        const info = ascendingExtractRequestId(result);
+        if (info && info.requestId !== '') {
+          pending.push(info);
+          // Déclenche le reveal côté serveur (clé jamais exposée au navigateur).
+          // Fire-and-forget : si l'appel échoue, le cron de secours résoudra la requête.
+          fetch('/api/reveal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requestId: info.requestId })
+          }).catch(() => {});
+        }
         blendSetResultState({
           status: 'waiting',
           txid: lastTxid,
-          message: `Transaction ${index + 1}/${batches.length} confirmed.`
+          message: `Commit ${index + 1}/${batches.length} confirmed (request #${info?.requestId ?? '?'}). Waiting for resolution...`
         });
-        await blendDelay(700);
+        await blendDelay(500);
       }
       sacrificeSelectedIds = [];
-      await syncWalletData();
-      const newFragments = ascendingFragmentsOwned().filter(asset => !beforeAssetIds.has(String(asset.asset_id || '')));
-      const fragmentCount = newFragments.length || traceAssetIds.length;
+      ascendingPendingRequests = pending.slice();
+
+      // PHASE 2 — REVEAL : on attend que le backend résolve (seed imprévisible côté serveur).
+      const fragmentCount = await ascendingWaitForReveal(pending, { beforeFragmentIds });
+
       blendSetResultState({
         status: 'ready',
         txid: lastTxid,
@@ -5799,7 +5954,21 @@ window._deepLinkIntent = null;
       blendRenderSelected();
     } catch (error) {
       console.error(error);
-      blendSetResultState({ status: 'error', message: `Sacrifice failed: ${error?.message || error}` });
+      if (error?.pendingTimeout) {
+        blendSetResultState({
+          status: 'ready',
+          txid: lastTxid,
+          customResult: {
+            type: 'pending-timeout',
+            title: 'Sacrifice pending',
+            subtitle: 'Awaiting on-chain resolution',
+            requests: error.pendingRequests || pending
+          },
+          message: ''
+        });
+      } else {
+        blendSetResultState({ status: 'error', message: `Sacrifice failed: ${error?.message || error}` });
+      }
     }
   }
 
@@ -6083,6 +6252,7 @@ window._deepLinkIntent = null;
   window.blendConfirmIngredientPicker = blendConfirmIngredientPicker;
   window.blendCloseIngredientPicker = blendCloseIngredientPicker;
   window.ascendingRemoveSacrificeAsset = ascendingRemoveSacrificeAsset;
+  window.ascendingReclaim = ascendingReclaim;
   window.blendAdjustQty = blendAdjustQty;
   window.blendOpenOutcomesModal = blendOpenOutcomesModal;
   window.blendCloseOutcomesModal = blendCloseOutcomesModal;
