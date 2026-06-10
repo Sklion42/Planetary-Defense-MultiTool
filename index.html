@@ -5805,6 +5805,17 @@ window._deepLinkIntent = null;
     return Array.isArray(response?.rows) && response.rows.length > 0;
   }
 
+  // Retrigger /api/reveal pour les IDs encore en attente.
+  function ascendingRetriggerReveal(remainingIds) {
+    for (const id of remainingIds) {
+      fetch('/api/reveal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId: id })
+      }).catch(err => console.warn('[reveal] retry POST /api/reveal failed:', err));
+    }
+  }
+
   // Attend la résolution on-chain de toutes les requêtes committées.
   async function ascendingWaitForReveal(pending, { beforeFragmentIds }) {
     const ids = pending.map(p => String(p.requestId)).filter(Boolean);
@@ -5812,6 +5823,11 @@ window._deepLinkIntent = null;
       const remaining = new Set(ids);
       const maxAttempts = 90; // ~ jusqu'à 3 min de suivi
       for (let attempt = 0; attempt < maxAttempts && remaining.size; attempt += 1) {
+        // Retrigger le reveal toutes les ~20s au cas où l'appel initial a échoué
+        // (pas de cron Vercel sur Hobby — c'est le seul filet de secours).
+        if (attempt > 0 && attempt % 8 === 0) {
+          ascendingRetriggerReveal([...remaining]);
+        }
         for (const id of [...remaining]) {
           try {
             if (!(await ascendingPendingRowExists(id))) remaining.delete(id);
@@ -5916,12 +5932,11 @@ window._deepLinkIntent = null;
         if (info && info.requestId !== '') {
           pending.push(info);
           // Déclenche le reveal côté serveur (clé jamais exposée au navigateur).
-          // Fire-and-forget : si l'appel échoue, le cron de secours résoudra la requête.
           fetch('/api/reveal', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ requestId: info.requestId })
-          }).catch(() => {});
+          }).catch(err => console.warn('[reveal] POST /api/reveal failed:', err));
         }
         blendSetResultState({
           status: 'waiting',
