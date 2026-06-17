@@ -719,6 +719,19 @@ async function disconnectWallet() {
   resetInventoryState();
 }
 
+// Detects touch/mobile devices where window.open() spawns a foreground tab
+// (backgrounding this page and stalling WharfKit's async login) rather than a
+// real desktop popup window. On these devices we must NOT pre-open a blank
+// window — it just leaves an orphaned blank tab and breaks CloudWallet's
+// native mobile login flow.
+function isMobileLikeDevice() {
+  if (navigator.userAgentData?.mobile) return true;
+  const ua = /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini|IEMobile|BlackBerry/i.test(navigator.userAgent || '');
+  const coarse = window.matchMedia?.('(pointer: coarse)')?.matches;
+  const noHover = window.matchMedia?.('(hover: none)')?.matches;
+  return ua || (Boolean(coarse) && Boolean(noHover));
+}
+
 async function connectSelectedWallet(provider) {
   if (!provider) return;
 
@@ -732,14 +745,15 @@ async function connectSelectedWallet(provider) {
     return;
   }
 
-  // Blank-popup intercept (CloudWallet only). sessionKit.login() awaits
-  // internally before calling window.open(), which consumes the browser's
-  // user-activation even when the app keeps its own call path synchronous.
-  // We open a blank window synchronously while the click is still "live",
-  // then hand it to WharfKit's next window.open() call. The patch restores
-  // itself immediately after use, leaving no side effects.
+  // Blank-popup intercept (CloudWallet, desktop only). sessionKit.login()
+  // awaits internally before calling window.open(), which consumes the
+  // browser's user-activation even when the app keeps its own call path
+  // synchronous. On desktop we open a real popup window synchronously while
+  // the click is still "live", then hand it to WharfKit's next window.open()
+  // call; the patch restores itself immediately after use. On mobile we skip
+  // this entirely and let WharfKit's native mobile flow handle the login.
   let restoreWindowOpen = null;
-  if (provider === 'waxcloudwallet') {
+  if (provider === 'waxcloudwallet' && !isMobileLikeDevice()) {
     const preOpened = window.open('', 'cw_login', 'width=480,height=680,left=200,top=100');
     if (preOpened) {
       const orig = window.open.bind(window);
