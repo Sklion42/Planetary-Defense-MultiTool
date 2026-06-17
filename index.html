@@ -732,6 +732,31 @@ async function connectSelectedWallet(provider) {
     return;
   }
 
+  // Blank-popup intercept (CloudWallet only). sessionKit.login() awaits
+  // internally before calling window.open(), which consumes the browser's
+  // user-activation even when the app keeps its own call path synchronous.
+  // We open a blank window synchronously while the click is still "live",
+  // then hand it to WharfKit's next window.open() call. The patch restores
+  // itself immediately after use, leaving no side effects.
+  let restoreWindowOpen = null;
+  if (provider === 'waxcloudwallet') {
+    const preOpened = window.open('', 'cw_login', 'width=480,height=680,left=200,top=100');
+    if (preOpened) {
+      const orig = window.open.bind(window);
+      window.open = function(url, name, features) {
+        window.open = orig;
+        restoreWindowOpen = null;
+        if (url && !preOpened.closed) {
+          preOpened.location.href = url;
+          preOpened.focus();
+          return preOpened;
+        }
+        return orig(url, name, features);
+      };
+      restoreWindowOpen = () => { window.open = orig; };
+    }
+  }
+
   const actionButtons = Array.from(document.querySelectorAll('[data-wallet-action="1"]'));
   actionButtons.forEach(btn => {
     btn.disabled = true;
@@ -740,11 +765,14 @@ async function connectSelectedWallet(provider) {
 
   try {
     const state = await wharfWallet.connect(provider);
+    restoreWindowOpen = null;
     applyWharfWalletState(state);
 
     closeWalletModal();
     await loadInventory();
   } catch (error) {
+    restoreWindowOpen?.();
+    restoreWindowOpen = null;
     await disconnectWallet();
     const detail = error?.message || String(error);
     alert(`${getWalletProviderName(provider)} connection failed: ${detail}`);
