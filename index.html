@@ -651,16 +651,36 @@ function closeWalletModal() {
   modal.setAttribute('aria-hidden', 'true');
 }
 
-function openWalletModal() {
+async function openWalletModal() {
   const modal = getWalletModal();
   if (!modal) return;
   modal.classList.add('is-open');
   modal.setAttribute('aria-hidden', 'false');
+
+  // Ensure WharfKit is fully initialized before the user can pick a provider.
+  // The provider click must reach window.open() synchronously, so we cannot
+  // afford to await a cold module inside that click handler.
+  const providerButtons = Array.from(modal.querySelectorAll('[data-wallet-provider]'));
+  if (!window.__pdWharfWallet) {
+    providerButtons.forEach(btn => { btn.disabled = true; });
+    await wharfWalletReady;
+  }
+  providerButtons.forEach(btn => { btn.disabled = false; });
 }
 
 async function getWharfWallet() {
   return window.__pdWharfWallet || await window.__pdWharfWalletReady;
 }
+
+// Warm up the WharfKit bundle as soon as the page script runs so that, by the
+// time the user clicks a wallet provider, window.__pdWharfWallet already exists.
+// This is what keeps the connect click handler synchronous up to window.open():
+// CloudWallet's login popup is blocked by the browser if the user-activation
+// gesture is lost while awaiting the (large) WharfKit module to download.
+const wharfWalletReady = getWharfWallet().catch(error => {
+  console.warn('WharfKit wallet failed to initialize', error);
+  return null;
+});
 
 function applyWharfWalletState(state) {
   activeWalletPermission = String(state?.permission || 'active');
@@ -701,6 +721,17 @@ async function disconnectWallet() {
 
 async function connectSelectedWallet(provider) {
   if (!provider) return;
+
+  // Read the already-initialized wallet synchronously. Awaiting a cold module
+  // here would consume the user-activation gesture and cause CloudWallet's
+  // login popup to be blocked ("Unable to open the popup window"). The modal
+  // open flow (openWalletModal) guarantees this is ready before we get here.
+  const wharfWallet = window.__pdWharfWallet;
+  if (!wharfWallet) {
+    alert('Wallet is still initializing. Please try again in a moment.');
+    return;
+  }
+
   const actionButtons = Array.from(document.querySelectorAll('[data-wallet-action="1"]'));
   actionButtons.forEach(btn => {
     btn.disabled = true;
@@ -708,7 +739,6 @@ async function connectSelectedWallet(provider) {
   });
 
   try {
-    const wharfWallet = await getWharfWallet();
     const state = await wharfWallet.connect(provider);
     applyWharfWalletState(state);
 
