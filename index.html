@@ -1290,13 +1290,15 @@ async function fetchOwnedAssetsForWallet(wallet) {
   return assets;
 }
 
-function mergeOwnedAssetsForSync(previousAssets, nextAssets) {
-  const merged = new Map();
-  [...previousAssets, ...nextAssets].forEach((asset, index) => {
-    const key = asset?.asset_id ? `asset:${asset.asset_id}` : `fallback:${getTemplateId(asset) || index}`;
-    merged.set(key, asset);
-  });
-  return [...merged.values()];
+// ⚠️ Le snapshot AtomicAssets d'un wallet est AUTORITAIRE : il liste exactement
+// ce qui est possédé à l'instant T. On ne fusionne donc PAS avec l'ancien état,
+// sinon un asset burn/transféré (ex : un coffre ouvert via blend) reste collé à
+// l'inventaire pour toujours et continue de s'afficher dans le Blend Organizer.
+// Un fetch qui échoue lève (fetchWithFallback throw) et est rattrapé par le
+// try/catch appelant, donc atteindre ce point veut dire que nextAssets est un
+// snapshot complet et fiable : on remplace, on ne fusionne pas.
+function reconcileOwnedAssetsForSync(previousAssets, nextAssets) {
+  return Array.isArray(nextAssets) ? nextAssets : [];
 }
 
 // ── LOAD ─────────────────────────────────────────────────────
@@ -1424,7 +1426,7 @@ async function syncWalletData() {
     const selectedTemplateId = selectedAsset ? String(getTemplateId(selectedAsset) || '') : '';
     const nextOwnedAssets = await fetchOwnedAssetsForWallet(wallet);
 
-    ownedAssets = mergeOwnedAssetsForSync(ownedAssets, nextOwnedAssets);
+    ownedAssets = reconcileOwnedAssetsForSync(ownedAssets, nextOwnedAssets);
     allAssets = buildDisplayAssets(ownedAssets, collectionTemplates);
     rebuildSchemaCounts(allAssets);
 
@@ -5818,6 +5820,27 @@ window._deepLinkIntent = null;
 
       // ── 4. DÉLAI RÉDUIT : 800ms les 3 premiers essais, puis 2000ms
       await blendDelay(attempt < 3 ? 800 : 2000);
+    }
+
+    // Réinjecte les NFT résultats dans l'inventaire courant. Ils viennent d'être
+    // mintés à ce wallet dans une tx confirmée (found provient du fetch direct par
+    // asset_id, fiable), mais l'index "owner" d'AtomicAssets a souvent quelques
+    // secondes de retard. Sans ça, un mercenaire fraîchement blend n'apparaît pas
+    // comme candidat au sacrifice / à l'ascend tant que l'index n'a pas rattrapé.
+    // On n'ajoute que ce qui manque : un asset déjà présent (version index, plus
+    // riche) n'est pas écrasé.
+    if (found.length) {
+      const ownedById = new Map(ownedAssets.map(asset => [String(asset?.asset_id || ''), asset]));
+      let added = false;
+      found.forEach(asset => {
+        const id = String(asset?.asset_id || '');
+        if (id && !ownedById.has(id)) { ownedById.set(id, asset); added = true; }
+      });
+      if (added) {
+        ownedAssets = [...ownedById.values()];
+        allAssets = buildDisplayAssets(ownedAssets, collectionTemplates);
+        rebuildSchemaCounts(allAssets);
+      }
     }
 
     return found.slice(0, Math.max(expectedCount, found.length));
