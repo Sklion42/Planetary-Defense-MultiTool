@@ -809,6 +809,21 @@ async function transactWithActiveWallet(transaction, options = {}) {
   return wharfWallet.transact(transaction, options);
 }
 
+// Round-robin des endpoints : on ne démarre pas toujours par le même nœud.
+// Un nœud à la traîne d'indexation (ownership encore périmée après un burn) ne
+// domine donc plus toutes les lectures, et la charge est répartie. Le fallback
+// reste COMPLET : on renvoie tous les endpoints, seulement réordonnés à partir
+// d'un curseur qui avance à chaque appel. Un seul curseur partagé suffit — il
+// donne juste un offset de départ, quelle que soit la longueur de la liste.
+let endpointRotationCursor = 0;
+function rotateEndpointOrder(endpoints) {
+  const list = Array.isArray(endpoints) ? endpoints.filter(Boolean) : [];
+  if (list.length <= 1) return list;
+  const offset = endpointRotationCursor % list.length;
+  endpointRotationCursor = (endpointRotationCursor + 1) % 1e9;
+  return [...list.slice(offset), ...list.slice(0, offset)];
+}
+
 async function fetchJsonFromEndpoints(endpoints, buildUrl, {
   timeoutMs = 8000,
   logLabel = 'Endpoint',
@@ -816,7 +831,7 @@ async function fetchJsonFromEndpoints(endpoints, buildUrl, {
   requestInit = {},
   acceptResponse = () => true
 } = {}) {
-  for (const base of endpoints) {
+  for (const base of rotateEndpointOrder(endpoints)) {
     try {
       const response = await fetch(buildUrl(base), {
         ...requestInit,
@@ -837,7 +852,11 @@ async function fetchJsonFromEndpoints(endpoints, buildUrl, {
 async function fetchWithFallback(path) {
   const data = await fetchJsonFromEndpoints(ENDPOINTS, base => base + path, {
     logLabel: 'Endpoint',
-    onSuccess: base => { API = base; }
+    onSuccess: base => { API = base; },
+    // Sans ça, le navigateur peut resservir une réponse d'inventaire en cache
+    // HTTP : après un burn (coffre ouvert via blend), un simple F5 réafficherait
+    // les assets déjà brûlés. On veut toujours l'état on-chain courant.
+    requestInit: { cache: 'no-store' }
   });
   if (data) return data;
   throw new Error('All API endpoints failed. Try opening via a local server (not file://).');
@@ -1281,8 +1300,13 @@ async function fetchOwnedAssetsForWallet(wallet) {
   if (!wallet) return assets;
   let page = 1;
   let batch = [];
+  // Paramètre anti-cache : la liste des assets possédés est la donnée la plus
+  // sensible à la fraîcheur (un burn doit disparaître tout de suite). Un URL
+  // unique par requête contourne aussi les caches CDN/edge des nœuds AtomicAssets,
+  // pas seulement le cache navigateur (déjà couvert par cache:'no-store').
+  const bust = Date.now();
   do {
-    const response = await fetchWithFallback(`/assets?collection_name=${COLLECTION}&owner=${wallet}&page=${page}&limit=500&order=desc&sort=asset_id`);
+    const response = await fetchWithFallback(`/assets?collection_name=${COLLECTION}&owner=${wallet}&page=${page}&limit=500&order=desc&sort=asset_id&_=${bust}`);
     batch = Array.isArray(response?.data) ? response.data : [];
     assets.push(...batch);
     page += 1;
