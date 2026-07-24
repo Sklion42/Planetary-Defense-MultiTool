@@ -1290,13 +1290,15 @@ async function fetchOwnedAssetsForWallet(wallet) {
   return assets;
 }
 
-function mergeOwnedAssetsForSync(previousAssets, nextAssets) {
-  const merged = new Map();
-  [...previousAssets, ...nextAssets].forEach((asset, index) => {
-    const key = asset?.asset_id ? `asset:${asset.asset_id}` : `fallback:${getTemplateId(asset) || index}`;
-    merged.set(key, asset);
-  });
-  return [...merged.values()];
+// ⚠️ Le snapshot AtomicAssets d'un wallet est AUTORITAIRE : il liste exactement
+// ce qui est possédé à l'instant T. On ne fusionne donc PAS avec l'ancien état,
+// sinon un asset burn/transféré (ex : un coffre ouvert via blend) reste collé à
+// l'inventaire pour toujours et continue de s'afficher dans le Blend Organizer.
+// Un fetch qui échoue lève (fetchWithFallback throw) et est rattrapé par le
+// try/catch appelant, donc atteindre ce point veut dire que nextAssets est un
+// snapshot complet et fiable : on remplace, on ne fusionne pas.
+function reconcileOwnedAssetsForSync(previousAssets, nextAssets) {
+  return Array.isArray(nextAssets) ? nextAssets : [];
 }
 
 // ── LOAD ─────────────────────────────────────────────────────
@@ -1424,7 +1426,7 @@ async function syncWalletData() {
     const selectedTemplateId = selectedAsset ? String(getTemplateId(selectedAsset) || '') : '';
     const nextOwnedAssets = await fetchOwnedAssetsForWallet(wallet);
 
-    ownedAssets = mergeOwnedAssetsForSync(ownedAssets, nextOwnedAssets);
+    ownedAssets = reconcileOwnedAssetsForSync(ownedAssets, nextOwnedAssets);
     allAssets = buildDisplayAssets(ownedAssets, collectionTemplates);
     rebuildSchemaCounts(allAssets);
 
