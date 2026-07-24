@@ -5822,6 +5822,27 @@ window._deepLinkIntent = null;
       await blendDelay(attempt < 3 ? 800 : 2000);
     }
 
+    // Réinjecte les NFT résultats dans l'inventaire courant. Ils viennent d'être
+    // mintés à ce wallet dans une tx confirmée (found provient du fetch direct par
+    // asset_id, fiable), mais l'index "owner" d'AtomicAssets a souvent quelques
+    // secondes de retard. Sans ça, un mercenaire fraîchement blend n'apparaît pas
+    // comme candidat au sacrifice / à l'ascend tant que l'index n'a pas rattrapé.
+    // On n'ajoute que ce qui manque : un asset déjà présent (version index, plus
+    // riche) n'est pas écrasé.
+    if (found.length) {
+      const ownedById = new Map(ownedAssets.map(asset => [String(asset?.asset_id || ''), asset]));
+      let added = false;
+      found.forEach(asset => {
+        const id = String(asset?.asset_id || '');
+        if (id && !ownedById.has(id)) { ownedById.set(id, asset); added = true; }
+      });
+      if (added) {
+        ownedAssets = [...ownedById.values()];
+        allAssets = buildDisplayAssets(ownedAssets, collectionTemplates);
+        rebuildSchemaCounts(allAssets);
+      }
+    }
+
     return found.slice(0, Math.max(expectedCount, found.length));
   }
 
