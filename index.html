@@ -3027,6 +3027,7 @@ window._deepLinkIntent = null;
   const ATOMIC_CONTRACT = 'atomicassets';
   const ASCEND_CONTRACT = 'ascend.pdef';
   const ASCENDING_ALLOWED_WALLET = 'zmnma.c.wam';
+  const ASCENDING_PUBLIC_UNLOCK_TIME = 1787486400;
   const ASCEND_FRAGMENT_TEMPLATE = '888509';
   const ASCEND_MAX_FRAGMENTS_PER_TX = 50;
   const ASCEND_MEMO_BURN = 'burn';
@@ -3365,6 +3366,7 @@ window._deepLinkIntent = null;
 
   function ascendingHasWalletAccess(row) {
     if (row?.ascendingMode === 'sacrifice') return true;
+    if (Math.floor(Date.now() / 1000) >= ASCENDING_PUBLIC_UNLOCK_TIME) return true;
     return String(getActiveWallet() || '').trim().toLowerCase() === ASCENDING_ALLOWED_WALLET;
   }
 
