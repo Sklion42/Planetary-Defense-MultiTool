@@ -512,7 +512,8 @@ const ENDPOINTS = [
 let API = ENDPOINTS[0];
 const MARKET_ENDPOINTS = ENDPOINTS.map(endpoint => endpoint.replace('/atomicassets/', '/atomicmarket/'));
 let MARKET_API = MARKET_ENDPOINTS[0];
-const IPFS_GW = 'https://atomichub-ipfs.com/ipfs/';
+const IPFS_GW = 'https://gateway.pinata.cloud/ipfs/';
+const IPFS_RESIZER = 'https://resizer.atomichub.io/images/v1/preview?ipfs=';
 const COLLECTION = 'planetdefnft';
 const MOBILE_MENU_BREAKPOINT = 710;
 const WAX_RPC_ENDPOINTS = [
@@ -1081,8 +1082,8 @@ function ipfsToHttp(value) {
   if (!value || typeof value !== 'string') return '';
   if (value.startsWith('http://') || value.startsWith('https://')) return value;
   if (value.startsWith('/') || value.startsWith('./') || value.startsWith('../')) return value;
-  if (value.startsWith('ipfs://')) return IPFS_GW + value.slice(7);
-  return IPFS_GW + value;
+  const hash = value.startsWith('ipfs://') ? value.slice(7) : value;
+  return IPFS_RESIZER + hash + '&size=370';
 }
 
 function formatCollectionLabel(name) {
@@ -1635,7 +1636,7 @@ function getStarInfo(data = {}) {
 
   return { count: 0, raw: value };
 }
-function getImg(a)  { const d={...a.template?.immutable_data,...a.data}; const h=d.img||d.image||d.Image||''; if(!h) return null; return h.startsWith('http')?h:IPFS_GW+h; }
+function getImg(a)  { const d={...a.template?.immutable_data,...a.data}; const h=d.img||d.image||d.Image||''; if(!h) return null; return h.startsWith('http')?h:IPFS_RESIZER+h+'&size=370'; }
 function getItemType(a) {
   const d={...a.template?.immutable_data,...a.data};
   return d.type||d.Type||d.unit_type||d.UnitType||d.class||d.Class||'Unknown Type';
