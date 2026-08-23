@@ -1636,7 +1636,7 @@ function getStarInfo(data = {}) {
 
   return { count: 0, raw: value };
 }
-function getImg(a)  { const d={...a.template?.immutable_data,...a.data}; const h=d.img||d.image||d.Image||''; if(!h) return null; return h.startsWith('http')?h:IPFS_RESIZER+h+'&size=370'; }
+function getImg(a)  { const d={...a.template?.immutable_data,...a.data}; const h=d.img||d.image||d.Image||''; if(!h) return null; if(h.startsWith('http')) return h; const hash=h.startsWith('ipfs://')?h.slice(7):h; return IPFS_RESIZER+hash+'&size=370'; }
 function getItemType(a) {
   const d={...a.template?.immutable_data,...a.data};
   return d.type||d.Type||d.unit_type||d.UnitType||d.class||d.Class||'Unknown Type';
