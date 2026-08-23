@@ -1732,7 +1732,7 @@ function renderItemList(assets) {
             const nameWithStars = starCount > 0 ? `${name} ${'⭐'.repeat(starCount)}` : name;
             const subLabel = currentSchema === 'all' ? formatSchemaName(itemSchema) : formatSchemaName(type);
             div.innerHTML = `
-              ${imgSrc?`<img class="item-thumb" src="${imgSrc}" alt="${name}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'">` : ''}
+              ${imgSrc?`<img class="item-thumb" src="${imgSrc}" alt="${name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
               <div class="item-thumb-placeholder" style="${imgSrc?'display:none':''}">${getSchemaEmoji(itemSchema)}</div>
               <div class="item-info">
                 <div class="item-name ${rarity?'rarity-'+rarity:''}">${nameWithStars}</div>
