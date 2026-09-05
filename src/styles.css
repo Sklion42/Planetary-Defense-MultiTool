@@ -2688,7 +2688,6 @@ body {
     text-align: left;
     transition: background .15s;
     position: relative;
-    overflow: hidden;
   }
   .blend-row:hover {
     background: rgba(43, 145, 192, 0.08);
@@ -2737,10 +2736,14 @@ body {
     align-items: center;
     justify-content: center;
     padding: 4px;
-    background: rgba(8, 18, 22, 0.55);
+    background: #160808cc;
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    /* WebKit ne composite le flou que si la couche est promue explicitement. */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: backdrop-filter;
+    border: 1px solid #590a0a52;
     pointer-events: none;
   }
   .blend-mint-cap-label {
