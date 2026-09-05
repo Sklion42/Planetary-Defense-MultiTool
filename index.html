@@ -6061,7 +6061,86 @@ window._deepLinkIntent = null;
       reverse: false,
       show_payer: false
     });
-    return Array.isArray(response?.rows) && response.rows.length > 0;
+    const row = Array.isArray(response?.rows) && response.rows.length ? response.rows[0] : null;
+    // Certains nœuds ignorent upper_bound et renvoient la ligne suivante : sans
+    // cette vérification on attendrait la résolution de la requête d'un autre joueur.
+    return !!row && String(row.request_id) === id;
+  }
+
+  // Requêtes encore en escrow pour un joueur, via l'index secondaire `byplayer`
+  // du contrat (pas de scan de toute la table, donc pas de plafond à 1000 lignes).
+  async function ascendingFetchPendingIdsForPlayer(player) {
+    const actor = String(player || '').trim();
+    if (!actor) return [];
+    const response = await blendFetchRpc('/v1/chain/get_table_rows', {
+      json: true,
+      code: ASCEND_CONTRACT,
+      scope: ASCEND_CONTRACT,
+      table: 'pendingburns',
+      index_position: 2,
+      key_type: 'name',
+      lower_bound: actor,
+      upper_bound: actor,
+      limit: 100,
+      reverse: false,
+      show_payer: false
+    });
+    return (Array.isArray(response?.rows) ? response.rows : [])
+      .filter(row => String(row?.player || '') === actor)
+      .map(row => String(row.request_id))
+      .filter(Boolean);
+  }
+
+  // Relit la tx côté serveur quand le wallet n'a pas renvoyé les traces
+  // (Cloud Wallet et la plupart des wallets mobiles).
+  async function ascendingResolveRequestIdFromTx(txId) {
+    const id = String(txId || '').trim();
+    if (!id) return null;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      if (attempt > 0) await blendDelay(attempt < 3 ? 1200 : 2000);
+      try {
+        const response = await fetch(`/api/logburn?txId=${encodeURIComponent(id)}`, { cache: 'no-store' });
+        const json = await response.json().catch(() => null);
+        if (response.ok && json?.ok && String(json.requestId || '')) {
+          return {
+            requestId: String(json.requestId),
+            guaranteed: Number(json.guaranteed || 0),
+            max: Number(json.max || 0)
+          };
+        }
+      } catch (error) {
+        console.warn('[sacrifice] /api/logburn failed:', error?.message || error);
+      }
+    }
+    return null;
+  }
+
+  // Cascade à trois niveaux pour retrouver le request_id d'un commit :
+  // traces du wallet -> relecture de la tx -> nouvelles lignes pendingburns du
+  // joueur. Sans lui, un wallet qui ne renvoie pas ses traces laisse les NFT en
+  // escrow sans aucun reveal déclenché.
+  async function ascendingResolveBurnRequestInfo(txResult, txId, player, knownIds) {
+    const fromTraces = ascendingExtractRequestId(txResult);
+    if (fromTraces && String(fromTraces.requestId || '')) return fromTraces;
+
+    const fromTx = await ascendingResolveRequestIdFromTx(txId);
+    if (fromTx) return fromTx;
+
+    // Dernier recours : la ligne apparue depuis le début du sacrifice. On
+    // compare à l'instantané pris avant le commit pour ne jamais récupérer une
+    // requête orpheline d'un sacrifice précédent.
+    const before = knownIds instanceof Set ? knownIds : new Set();
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      try {
+        const ids = await ascendingFetchPendingIdsForPlayer(player);
+        const fresh = ids.filter(id => !before.has(String(id)));
+        if (fresh.length) {
+          return { requestId: String(fresh[fresh.length - 1]), guaranteed: 0, max: 0 };
+        }
+      } catch (_) { /* lag RPC : on retente */ }
+      await blendDelay(attempt < 4 ? 1000 : 1500);
+    }
+    return null;
   }
 
   // Retrigger /api/reveal pour les IDs encore en attente.
@@ -6161,6 +6240,13 @@ window._deepLinkIntent = null;
     if (!await ascendingEnsureContractReady()) return;
     if (!confirm(`Sacrifice ${summary.assets.length} NFT${summary.assets.length > 1 ? 's' : ''} in ${batches.length} transaction${batches.length > 1 ? 's' : ''}?`)) return;
     const beforeFragmentIds = new Set(ascendingFragmentsOwned().map(asset => String(asset.asset_id || '')).filter(Boolean));
+    // Instantané des requêtes déjà en escrow AVANT ce sacrifice : il sert de
+    // référence au repli par joueur, pour ne jamais adopter une requête
+    // orpheline d'un sacrifice précédent.
+    let knownPendingIds = new Set();
+    try {
+      knownPendingIds = new Set(await ascendingFetchPendingIdsForPlayer(wallet));
+    } catch (_) { /* lecture best-effort : le repli restera prudent */ }
     const pending = [];
     let lastTxid = '';
     blendOpenResultModal({ expectedCount: summary.max, blendLabel: 'Sacrifice' });
@@ -6187,8 +6273,9 @@ window._deepLinkIntent = null;
         }, { blocksBehind: 3, expireSeconds: 120 });
         const txid = blendExtractTransactionId(result);
         lastTxid = txid || lastTxid;
-        const info = ascendingExtractRequestId(result);
+        const info = await ascendingResolveBurnRequestInfo(result, txid || lastTxid, wallet, knownPendingIds);
         if (info && info.requestId !== '') {
+          knownPendingIds.add(String(info.requestId));
           pending.push(info);
           // Déclenche le reveal côté serveur (clé jamais exposée au navigateur).
           fetch('/api/reveal', {
@@ -6196,6 +6283,10 @@ window._deepLinkIntent = null;
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ requestId: info.requestId })
           }).catch(err => console.warn('[reveal] POST /api/reveal failed:', err));
+        } else {
+          console.warn('[sacrifice] no logburn request_id after commit (wallet traces missing?)', {
+            txId: txid || lastTxid || null
+          });
         }
         blendSetResultState({
           status: 'waiting',
