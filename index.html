@@ -1270,9 +1270,14 @@ function rebuildSchemaCounts(assets) {
 async function loadCollectionTemplates() {
   if (collectionTemplates.length) return collectionTemplates;
   const cacheKey = `pdnft:templates:${COLLECTION}:v1`;
+  // Sans expiration, un template cree recemment (ex : la version 1 etoile d'un
+  // NFT) resterait invisible et son mapping paraitrait absent.
+  const TEMPLATE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    if (Array.isArray(cached?.templates) && cached.templates.length) {
+    const savedAt = Number(cached?.savedAt || 0);
+    const isFresh = savedAt > 0 && Date.now() - savedAt < TEMPLATE_CACHE_TTL_MS;
+    if (isFresh && Array.isArray(cached?.templates) && cached.templates.length) {
       collectionTemplates = cached.templates.filter(template => template?.template_id);
       return collectionTemplates;
     }
@@ -3119,7 +3124,8 @@ window._deepLinkIntent = null;
     burnConfigs: ASCEND_FALLBACK_BURN_CONFIGS,
     schemas: ASCEND_FALLBACK_SCHEMAS,
     starupCosts: ASCEND_FALLBACK_STARUP_COSTS,
-    starupMaps: []
+    starupMaps: [],
+    starupMapIndex: new Map()
   };
   let ascendingContractStatus = {
     checkedAt: 0,
@@ -3434,17 +3440,45 @@ window._deepLinkIntent = null;
       .sort((a, b) => Number(a.blend_id) - Number(b.blend_id));
   }
 
-  async function ascendingFetchTable(table) {
-    const response = await blendFetchRpc('/v1/chain/get_table_rows', {
-      json: true,
-      code: ASCEND_CONTRACT,
-      scope: ASCEND_CONTRACT,
-      table,
-      limit: 1000,
-      reverse: false,
-      show_payer: false
-    });
-    return Array.isArray(response?.rows) ? response.rows : [];
+  async function ascendingFetchTable(table, scope = ASCEND_CONTRACT) {
+    // Les tables du contrat peuvent depasser 1000 lignes : on suit le curseur
+    // `next_key` tant que le noeud annonce `more`, sinon on ne verrait qu'une
+    // partie des mappings (et un template mappe passerait pour non mappe).
+    const rows = [];
+    let lowerBound = '';
+    for (let page = 0; page < 20; page += 1) {
+      const response = await blendFetchRpc('/v1/chain/get_table_rows', {
+        json: true,
+        code: ASCEND_CONTRACT,
+        scope,
+        table,
+        limit: 1000,
+        lower_bound: lowerBound,
+        reverse: false,
+        show_payer: false
+      });
+      const batch = Array.isArray(response?.rows) ? response.rows : [];
+      rows.push(...batch);
+      const nextKey = String(response?.next_key || '');
+      if (!response?.more || !nextKey || nextKey === lowerBound) break;
+      lowerBound = nextKey;
+    }
+    return rows;
+  }
+
+  async function ascendingFetchStarupMaps() {
+    // Selon le deploiement, la table peut etre scopee sur le contrat ou sur la
+    // collection : on essaie les deux avant de conclure qu'il n'y a rien.
+    const scopes = [ASCEND_CONTRACT, COLLECTION].filter((scope, index, list) => scope && list.indexOf(scope) === index);
+    for (const scope of scopes) {
+      try {
+        const rows = await ascendingFetchTable('starupmaps', scope);
+        if (rows.length) return rows;
+      } catch (error) {
+        console.warn(`starupmaps unreadable on scope ${scope}`, error?.message || error);
+      }
+    }
+    return [];
   }
 
   async function ascendingFetchContractAccount() {
@@ -3555,47 +3589,108 @@ window._deepLinkIntent = null;
       .filter(Boolean);
   }
 
+  function ascendingFirstNumeric(row, keys) {
+    for (const key of keys) {
+      const value = row?.[key];
+      if (value === undefined || value === null || value === '') continue;
+      const numeric = Number(value);
+      if (Number.isFinite(numeric) && numeric > 0) return numeric;
+    }
+    return 0;
+  }
+
+  // Les lignes on-chain n'utilisent pas toujours les memes noms de champs selon
+  // la version du contrat : on accepte les variantes courantes plutot que de
+  // renvoyer "Waiting for mapping" alors que le mapping existe bien.
+  function ascendingNormalizeStarupMap(row) {
+    const from = ascendingFirstNumeric(row, [
+      'template_from', 'from_template', 'from_template_id', 'template_id_from',
+      'template_id', 'from', 'source_template', 'source_template_id'
+    ]);
+    const to = ascendingFirstNumeric(row, [
+      'template_to', 'to_template', 'to_template_id', 'template_id_to',
+      'next_template', 'next_template_id', 'to', 'target_template', 'target_template_id',
+      'result_template', 'result_template_id'
+    ]);
+    if (!from || !to) return null;
+    return { template_from: from, template_to: to, inferred: false };
+  }
+
+  function ascendingBuildStarupMapIndex(maps) {
+    const index = new Map();
+    (maps || []).forEach(row => {
+      const key = String(row?.template_from || '');
+      if (!key) return;
+      // Priorite aux mappings on-chain sur ceux deduits des noms de templates.
+      const existing = index.get(key);
+      if (existing && !existing.inferred && row.inferred) return;
+      index.set(key, row);
+    });
+    return index;
+  }
+
+  function ascendingMergeStarupMaps(chainMaps, fallbackMaps) {
+    const index = ascendingBuildStarupMapIndex([...(fallbackMaps || []), ...(chainMaps || [])]);
+    return [...index.values()];
+  }
+
   async function ascendingLoadConfig() {
     if (ascendingConfig.loaded) return ascendingConfig;
     await loadCollectionTemplates();
     if (!ASCEND_CHAIN_ENABLED) {
+      const fallbackMaps = ascendingBuildFallbackStarupMaps();
       ascendingConfig = {
         ...ascendingConfig,
         loaded: true,
         contractAvailable: false,
         configSource: 'fallback',
-        starupMaps: ascendingBuildFallbackStarupMaps()
+        starupMaps: fallbackMaps,
+        starupMapIndex: ascendingBuildStarupMapIndex(fallbackMaps)
       };
       return ascendingConfig;
     }
     try {
       await loadCollectionTemplates();
-      const [burnConfigs, schemas, starupCosts, starupMaps] = await Promise.all([
+      const [burnConfigs, schemas, starupCosts, rawStarupMaps] = await Promise.all([
         ascendingFetchTable('burnconfigs'),
         ascendingFetchTable('schemas'),
         ascendingFetchTable('starupcosts'),
-        ascendingFetchTable('starupmaps'),
+        ascendingFetchStarupMaps(),
         ascendingCheckContractReady()
       ]);
-      const fallbackMaps = starupMaps.length ? starupMaps : ascendingBuildFallbackStarupMaps();
+      const chainMaps = rawStarupMaps.map(ascendingNormalizeStarupMap).filter(Boolean);
+      if (rawStarupMaps.length && !chainMaps.length) {
+        console.warn('starupmaps rows found but no usable template ids', rawStarupMaps[0]);
+      }
+      // On garde les mappings deduits en complement : ils ne remplacent jamais
+      // une ligne on-chain, ils comblent seulement les templates absents.
+      // Si la table on-chain repond, elle fait autorite : aucun mapping deduit
+      // n'est ajoute, donc seuls les templates presents dans `starupmaps` sont
+      // proposes a l'ascension.
+      const mergedMaps = chainMaps.length
+        ? ascendingMergeStarupMaps(chainMaps, [])
+        : ascendingBuildFallbackStarupMaps();
       ascendingConfig = {
         loaded: true,
         contractAvailable: ascendingContractStatus.ready,
-        configSource: starupMaps.length ? 'chain' : 'fallback',
+        configSource: chainMaps.length ? 'chain' : 'fallback',
         burnConfigs: burnConfigs.length ? burnConfigs : ASCEND_FALLBACK_BURN_CONFIGS,
         schemas: schemas.length ? schemas.map(row => String(row.schema_name || '')).filter(Boolean) : ASCEND_FALLBACK_SCHEMAS,
         starupCosts: starupCosts.length ? starupCosts : ASCEND_FALLBACK_STARUP_COSTS,
-        starupMaps: fallbackMaps
+        starupMaps: mergedMaps,
+        starupMapIndex: ascendingBuildStarupMapIndex(mergedMaps)
       };
     } catch (error) {
       console.warn('Ascending config unavailable, using local fallback.', error);
       try { await loadCollectionTemplates(); } catch (_) {}
+      const fallbackMaps = ascendingBuildFallbackStarupMaps();
       ascendingConfig = {
         ...ascendingConfig,
         loaded: true,
         contractAvailable: false,
         configSource: 'fallback',
-        starupMaps: ascendingBuildFallbackStarupMaps()
+        starupMaps: fallbackMaps,
+        starupMapIndex: ascendingBuildStarupMapIndex(fallbackMaps)
       };
     }
     return ascendingConfig;
@@ -4360,8 +4455,47 @@ window._deepLinkIntent = null;
     )) || null;
   }
 
+  const ascendingTemplateFetchQueue = new Set();
+
+  // Le cache local des templates de collection peut dater d'avant la creation
+  // d'un template de destination : on va alors le chercher a l'unite.
+  function ascendingResolveTemplate(templateId) {
+    const id = String(templateId || '');
+    if (!id) return null;
+    const known = blendTemplateMap.get(id)
+      || collectionTemplates.find(template => String(template?.template_id || '') === id)
+      || null;
+    if (known) {
+      blendTemplateMap.set(id, known);
+      return known;
+    }
+    ascendingFetchTemplateById(id);
+    return null;
+  }
+
+  async function ascendingFetchTemplateById(templateId) {
+    const id = String(templateId || '');
+    if (!id || ascendingTemplateFetchQueue.has(id)) return;
+    ascendingTemplateFetchQueue.add(id);
+    try {
+      const response = await fetchWithFallback(`/templates/${COLLECTION}/${id}`);
+      const template = response?.data;
+      if (!template?.template_id) return;
+      blendTemplateMap.set(String(template.template_id), template);
+      if (!collectionTemplates.some(item => String(item?.template_id || '') === String(template.template_id))) {
+        collectionTemplates.push(template);
+      }
+      if (selectedBlend && blendIsAscendingRow(selectedBlend)) blendRenderSelected();
+    } catch (error) {
+      console.warn(`Unable to load template #${id}`, error?.message || error);
+    }
+  }
+
   function ascendingStarupMapForAsset(asset) {
     const templateId = String(getTemplateId(asset) || '');
+    if (!templateId) return null;
+    const index = ascendingConfig.starupMapIndex;
+    if (index instanceof Map) return index.get(templateId) || null;
     return ascendingConfig.starupMaps.find(row => String(row.template_from || '') === templateId) || null;
   }
 
@@ -4371,7 +4505,10 @@ window._deepLinkIntent = null;
       !ascendingIsFragment(asset) &&
       ascendingIsCollectionAsset(asset) &&
       ascendingIsAcceptedSchema(asset) &&
-      !!ascendingStarupCostForAsset(asset)
+      !!ascendingStarupCostForAsset(asset) &&
+      // Un NFT sans ligne dans `starupmaps` n'a pas de template de destination :
+      // on ne le propose pas plutot que d'afficher un resultat vide.
+      !!ascendingStarupMapForAsset(asset)
     )));
   }
 
@@ -4628,12 +4765,12 @@ window._deepLinkIntent = null;
     </button>`;
   }
 
-  function ascendingRenderTemplateFrame(template, fallbackText = 'Result pending') {
+  function ascendingRenderTemplateFrame(template, fallbackText = 'Result pending', fallbackMeta = 'Waiting for mapping') {
     if (!template) {
       return `<div class="ascend-nft-frame is-empty">
         <div class="ascend-card-image-slot"><div class="blend-ingredient-placeholder">?</div></div>
         <div class="ascend-card-name">${blendEscape(fallbackText)}</div>
-        <div class="ascend-card-meta">Waiting for mapping</div>
+        <div class="ascend-card-meta">${blendEscape(fallbackMeta)}</div>
       </div>`;
     }
     const img = blendTemplateImage(template);
@@ -4739,7 +4876,7 @@ window._deepLinkIntent = null;
       ascendSelectedFragmentIds = ownedFragments.slice(0, need).map(asset => String(asset.asset_id));
     }
     const selectedFragments = ascendingGetSelectedFragments();
-    const resultTemplate = map ? blendTemplateMap.get(String(map.template_to)) : null;
+    const resultTemplate = map ? ascendingResolveTemplate(map.template_to) : null;
     const canAscend = getActiveWallet() && nft && cost && map && selectedFragments.length >= need;
     const resultTitle = resultTemplate ? 'You will receive' : 'Ascended NFT';
     const fragmentState = need ? `${need} fragments required` : 'Choose an eligible NFT first';
@@ -4758,7 +4895,11 @@ window._deepLinkIntent = null;
         </div>
         <div class="ascend-output-panel">
           <div class="ascend-panel-title">${blendEscape(resultTitle)}</div>
-          ${ascendingRenderTemplateFrame(resultTemplate, map ? `Template #${map.template_to}` : 'Result mapping needed')}
+          ${ascendingRenderTemplateFrame(
+            resultTemplate,
+            map ? `Template #${map.template_to}` : 'Result mapping needed',
+            map ? 'Loading template metadata...' : 'No starupmaps entry for this template'
+          )}
         </div>
       </div>
       <div class="blend-recipe-footer">
@@ -5247,7 +5388,7 @@ window._deepLinkIntent = null;
       const nft = ascendingGetSelectedNft();
       const cost = nft ? ascendingStarupCostForAsset(nft) : null;
       const map = nft ? ascendingStarupMapForAsset(nft) : null;
-      const resultTemplate = map ? blendTemplateMap.get(String(map.template_to)) : null;
+      const resultTemplate = map ? ascendingResolveTemplate(map.template_to) : null;
       document.getElementById('blendDetailsArea').innerHTML = `
         <div class="rarity-line"><span>Ascend</span><span style="margin-left:auto">Ascending</span></div>
         <div class="blend-info-grid">
@@ -5256,7 +5397,7 @@ window._deepLinkIntent = null;
           <div class="blend-info-tile"><div class="blend-info-label">Fragments required</div><div class="blend-info-value">${cost ? cost.fragments_cost : '-'}</div></div>
           <div class="blend-info-tile"><div class="blend-info-label">Selected fragments</div><div class="blend-info-value">${ascendingGetSelectedFragments().length}</div></div>
           <div class="blend-info-tile"><div class="blend-info-label">Result</div><div class="blend-info-value">${map ? `Template #${blendEscape(map.template_to)}` : '-'}</div></div>
-          <div class="blend-info-tile"><div class="blend-info-label">Preview</div><div class="blend-info-value">${resultTemplate ? blendEscape(blendTemplateName(resultTemplate)) : 'Mapping needed'}</div></div>
+          <div class="blend-info-tile"><div class="blend-info-label">Preview</div><div class="blend-info-value">${resultTemplate ? blendEscape(blendTemplateName(resultTemplate)) : (map ? 'Loading...' : 'Mapping needed')}</div></div>
           <div class="blend-info-tile"><div class="blend-info-label">Contract</div><div class="blend-info-value">${blendEscape(ASCEND_CONTRACT)}</div></div>
           <div class="blend-info-tile"><div class="blend-info-label">Config</div><div class="blend-info-value">${map?.inferred ? 'Local preview' : 'On-chain'}</div></div>
         </div>
