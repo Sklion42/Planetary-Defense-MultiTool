@@ -3335,6 +3335,49 @@ window._deepLinkIntent = null;
       .sort((a, b) => b.percent - a.percent || a.name.localeCompare(b.name));
   }
 
+  // Un blend est "mint cap reached" quand son nombre d'utilisations autorisees
+  // est epuise, ou quand tous les templates qu'il peut produire ont atteint
+  // leur max supply : dans les deux cas plus aucun mint n'est possible.
+  function blendTemplateSupplyReached(template) {
+    const max = Number(template?.max_supply || 0);
+    if (!(max > 0)) return false;
+    return Number(template?.issued_supply || 0) >= max;
+  }
+
+  function blendResultTemplateIds(row) {
+    const ids = new Set();
+    (row?.rolls || []).forEach(roll => {
+      (roll?.outcomes || []).forEach(outcome => {
+        blendOutcomeResultTemplates(outcome).forEach(id => ids.add(String(id)));
+      });
+    });
+    return [...ids];
+  }
+
+  function blendUseCapReached(row) {
+    const max = Number(row?.max || 0);
+    return max > 0 && Number(row?.use_count || 0) >= max;
+  }
+
+  function blendResultsSupplyReached(row) {
+    const ids = blendResultTemplateIds(row);
+    if (!ids.length) return false;
+    const templates = ids.map(id => blendTemplateMap.get(id));
+    // Un template inconnu (cache incomplet) empeche toute conclusion : on
+    // prefere ne rien afficher plutot que de bloquer un blend encore mintable.
+    if (templates.some(template => !template)) return false;
+    return templates.every(blendTemplateSupplyReached);
+  }
+
+  function blendMintCapReached(row) {
+    if (!row || blendIsAscendingRow(row)) return false;
+    return blendUseCapReached(row) || blendResultsSupplyReached(row);
+  }
+
+  function blendMintCapOverlayHtml() {
+    return '<div class="blend-mint-cap-overlay"><span class="blend-mint-cap-label">Mint cap reached</span></div>';
+  }
+
   function blendSearchText(row) {
     const parts = blendCategoryParts(row);
     const outcomes = blendPossibleOutcomes(row);
@@ -4076,10 +4119,11 @@ window._deepLinkIntent = null;
             itemsWrap.className = `item-type-items${subCollapsed ? ' is-collapsed' : ''}`;
             group.rows.forEach(row => {
               const availability = blendIsAscendingRow(row) ? ascendingGetAvailability(row) : blendGetAvailability(row, 1);
+              const mintCapReached = blendMintCapReached(row);
               const img = blendImage(row);
               const button = document.createElement('button');
               button.type = 'button';
-              button.className = `blend-row${String(selectedBlend?.blend_id || '') === String(row.blend_id) ? ' selected' : ''}`;
+              button.className = `blend-row${String(selectedBlend?.blend_id || '') === String(row.blend_id) ? ' selected' : ''}${mintCapReached ? ' is-mint-capped' : ''}`;
               button.onclick = () => blendSelectBlend(row.blend_id, true);
               button.innerHTML = `
                 ${img ? `<img class="blend-row-thumb" src="${blendEscape(img)}" alt="${blendEscape(blendName(row))}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
@@ -4088,7 +4132,8 @@ window._deepLinkIntent = null;
                   <div class="blend-row-title">${blendEscape(blendName(row))}</div>
                   <div class="blend-row-sub">${blendIsAscendingRow(row) ? 'Smart contract flow' : `#${row.blend_id}`} - ${blendEscape(group.parts.sub)}</div>
                 </div>
-                <span class="blend-ready-badge${availability.maxCopies > 0 ? '' : ' is-missing'}">${availability.maxCopies > 0 ? `x${availability.maxCopies}` : 'Missing'}</span>`;
+                <span class="blend-ready-badge${availability.maxCopies > 0 ? '' : ' is-missing'}">${availability.maxCopies > 0 ? `x${availability.maxCopies}` : 'Missing'}</span>
+                ${mintCapReached ? blendMintCapOverlayHtml() : ''}`;
               itemsWrap.appendChild(button);
             });
 
@@ -4912,6 +4957,7 @@ window._deepLinkIntent = null;
   }
 
   function blendRenderSelectedCompact() {
+    document.getElementById('blendPreviewArea')?.classList.remove('is-mint-capped');
     if (!selectedBlend) {
       blendRenderEmptySelection();
       return;
@@ -4925,7 +4971,8 @@ window._deepLinkIntent = null;
     const desiredQty = Math.max(1, Number(qtyInput?.value || 1));
     const availability = blendGetAvailability(selectedBlend, desiredQty);
     const preview = document.getElementById('blendPreviewArea');
-    const canBlend = availability.maxCopies > 0 && desiredQty <= availability.maxCopies && !availability.missing.length;
+    const mintCapReached = blendMintCapReached(selectedBlend);
+    const canBlend = !mintCapReached && availability.maxCopies > 0 && desiredQty <= availability.maxCopies && !availability.missing.length;
     const recipeHtml = availability.requirements.map((requirement, reqIndex) => {
       const slots = blendSlotsForRequirement(availability, reqIndex);
       return blendRenderIngredientCard(requirement, reqIndex, slots, desiredQty);
@@ -4939,7 +4986,9 @@ window._deepLinkIntent = null;
       ? '<div class="blend-recipe-tools"><button class="blend-outcomes-btn" type="button" onclick="blendOpenOutcomesModal()">View Possible Results</button></div>'
       : '';
 
+    preview.classList.toggle('is-mint-capped', mintCapReached);
     preview.innerHTML = `
+      ${mintCapReached ? blendMintCapOverlayHtml() : ''}
       <div class="blend-recipe-main">
         <div class="${recipeListClass}" style="--ingredient-rows:${ingredientRows}">${recipeHtml || '<div class="status-msg">No NFT ingredient listed.</div>'}</div>
       </div>
@@ -6401,6 +6450,11 @@ window._deepLinkIntent = null;
     if (blendIsAscendingRow(selectedBlend)) {
       if (selectedBlend.ascendingMode === 'sacrifice') await ascendingExecuteSacrifice();
       else await ascendingExecuteAscend();
+      return;
+    }
+    if (blendMintCapReached(selectedBlend)) {
+      alert('Mint cap reached for this blend.');
+      blendRenderSelected();
       return;
     }
     const qty = Math.max(1, Number(document.getElementById('blendQtyInput')?.value || 1));

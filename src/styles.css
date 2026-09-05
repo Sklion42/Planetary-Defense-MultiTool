@@ -2687,6 +2687,7 @@ body {
     cursor: pointer;
     text-align: left;
     transition: background .15s;
+    position: relative;
   }
   .blend-row:hover {
     background: rgba(43, 145, 192, 0.08);
@@ -2725,6 +2726,42 @@ body {
     color: var(--text-dim);
     font-size: 10px;
   }
+  /* Overlay "verre" affiche sur un blend dont le mint n'est plus possible :
+     usages epuises, ou tous les templates produits au max supply. */
+  .blend-mint-cap-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    background: #160808cc;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    /* WebKit ne composite le flou que si la couche est promue explicitement. */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: backdrop-filter;
+    border: 1px solid #590a0a52;
+    pointer-events: none;
+  }
+  .blend-mint-cap-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    text-align: center;
+    color: #ffe4e4;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
+  }
+  .blend-preview-body.is-mint-capped > .blend-mint-cap-overlay .blend-mint-cap-label {
+    font-size: 15px;
+    padding: 10px 22px;
+  }
   .blend-ready-badge {
     color: #75e0a4;
     font-family: 'Share Tech Mono', monospace;
@@ -2753,6 +2790,7 @@ body {
     min-height: 0;
     overflow: hidden;
     padding: 12px;
+    position: relative;
   }
   .blend-recipe-main {
     width: 100%;
