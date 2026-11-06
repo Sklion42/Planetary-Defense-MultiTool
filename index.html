@@ -30,9 +30,9 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/icons/web-app-manifest-512x512.png">
 
   <!-- SEO / social sharing -->
-  <meta name="description" content="All your Planetary Defense universe in one place - Inventory, Blends, Market and more.">
+  <meta name="description" content="All your Planetary Defense universe in one place - Blends, Mercenaries and more.">
   <meta property="og:title" content="Planetary Defense - MultiTool">
-  <meta property="og:description" content="All your Planetary Defense universe in one place - Inventory, Blends, Market and more.">
+  <meta property="og:description" content="All your Planetary Defense universe in one place - Blends, Mercenaries and more.">
   <meta property="og:image" content="/icons/web-app-manifest-512x512.png">
   <meta property="og:type" content="website">
 
@@ -73,7 +73,6 @@
         <div class="menu-subtitle">Choose your next operational interface.</div>
         <a class="menu-button" href="https://beta.planetarydefense.io" target="_blank" rel="noopener">PLANETARY DEFENSE v3</a>
         <a class="menu-button" href="https://hub.planetarydefense.io/" target="_blank" rel="noopener">PLANETARY DEFENSE HUB</a>
-        <button class="menu-button" type="button" onclick="openInventoryPage()">INVENTORY</button>
         <button class="menu-button" type="button" onclick="openBlendPage()">BLEND ORGANIZER</button>
         <button class="menu-button" type="button" onclick="openMercPage()">MANAGE MERCENARIES</button>
         <a class="menu-button" href="https://naroncodex.app/" target="_blank" rel="noopener">Naron Codex<span class="menu-button-byline">by Shade</span></a>
@@ -82,98 +81,6 @@
   </div>
 </div>
 
-
-<div id="inventoryPage" class="app-page"> 
-  <div class="top-bar">
-    <div class="collection-banner" hidden="" id="collectionBanner">
-      <img alt="Collection artwork" class="collection-logo" id="collectionLogo" loading="lazy"/>
-      <div class="collection-copy">
-        <div class="collection-kicker">Collection</div>
-        <div class="collection-name" id="collectionName">Planetary Defense</div>
-        <div class="collection-meta" id="collectionMeta">planetdefnft</div>
-      </div>
-    </div>
-    <div class="wallet-bar">
-      <div aria-live="polite" class="wallet-status" id="walletStatus">
-        <span class="wallet-indicator" id="walletIndicator"></span>
-        <div class="wallet-copy">
-          <div class="wallet-label">Anchor</div>
-          <div class="wallet-account disconnected" id="walletAccount">Not connected</div>
-        </div>
-        <button class="btn-load secondary wallet-action" data-wallet-action="1" id="anchorActionBtn" onclick="handleWalletAction()" type="button">Connect</button>
-      </div>
-    </div>
-  </div>
-  <div class="hub-nav-bar">
-    <button class="hub-back-btn" type="button" onclick="showAppPage('menuPage')">← Menu</button>
-    <button class="hub-back-btn hub-sync-btn" id="inventorySyncBtn" type="button" onclick="syncWalletData()">Sync Data</button>
-  </div>
-  <div class="layout">
-    <div aria-hidden="true" class="mobile-nav-backdrop" id="mobileNavBackdrop"></div>
-    <!-- LEFT -->
-    <div class="panel inventory-panel" id="inventoryPanel">
-      <button aria-controls="inventoryPanel" aria-expanded="false" class="mobile-menu-tab" id="mobileMenuBtn" type="button"><span class="tab-chevron">❯</span><span class="tab-label">INV</span></button>
-      <div class="panel-title has-panel-sync">Inventory<button class="panel-sync-btn" id="inventoryPanelSyncBtn" type="button" onclick="syncWalletData()" aria-label="Sync inventory data" title="Sync data">&#8635;</button></div>
-      <div class="inv-categories" id="schemaList">
-        <div class="cat-item active" data-schema="all" onclick="filterSchema('all',this)">
-        <span class="cat-dot"></span> All NFTs
-          <span class="badge-count" id="badge-all">0</span>
-        </div>
-      </div>
-      <div class="panel-title">My NFTs</div>
-      <div class="item-list" id="itemList">
-       <div class="status-msg">Connect your wallet</div>
-      </div>
-      <div class="sort-bar inventory-filter-row">
-        <input class="blend-search" id="inventorySearchInput" oninput="applySort()" placeholder="Search NFT by name, type, rarity, schema, ..." type="search">
-        <select id="ownershipFilter" onchange="applySort()" aria-label="Ownership filter">
-          <option value="all">All</option>
-          <option value="owned">Owned</option>
-          <option value="missing">Not owned</option>
-        </select>
-        <select id="sortSelect" onchange="applySort()" aria-label="Sort inventory">
-          <option value="rarity-asc">Rarity &#8593;</option>
-          <option value="rarity-desc">Rarity &#8595;</option>
-          <option value="name-asc">Name &#8593;</option>
-          <option value="name-desc">Name &#8595;</option>
-          <option value="mint-asc">Mint # &#8593;</option>
-          <option value="mint-desc">Mint # &#8595;</option>
-        </select>
-        <div class="inventory-star-filter" role="group" aria-label="Star filter">
-          <button class="inventory-star-btn" data-star-filter="1" type="button" aria-label="Filter 1 star" onclick="setInventoryStarFilter(1)">&#9733;</button>
-          <button class="inventory-star-btn" data-star-filter="2" type="button" aria-label="Filter 2 stars" onclick="setInventoryStarFilter(2)">&#9733;</button>
-          <button class="inventory-star-btn" data-star-filter="3" type="button" aria-label="Filter 3 stars" onclick="setInventoryStarFilter(3)">&#9733;</button>
-          <button class="inventory-star-btn" data-star-filter="4" type="button" aria-label="Filter 4 stars" onclick="setInventoryStarFilter(4)">&#9733;</button>
-          <button class="inventory-star-btn" data-star-filter="5" type="button" aria-label="Filter 5 stars" onclick="setInventoryStarFilter(5)">&#9733;</button>
-        </div>
-      </div>
-    </div>
-    <!-- CENTER -->
-    <div class="panel center-panel">
-      <div class="panel-title">Selected NFT</div>
-      <div id="cardArea">
-        <div class="empty-card">
-          <div class="status-msg" style="margin-top:40px">Select an NFT from your inventory</div>
-        </div>
-      </div>
-    </div>
-    <!-- RIGHT -->
-    <div class="details-column">
-      <div class="panel details-panel">
-        <div class="panel-title">NFT Details</div>
-        <div id="detailsArea">
-          <div class="status-msg" style="margin-top:40px">No NFT selected</div>
-        </div>
-      </div>
-      <div class="panel market-panel">
-        <div class="panel-title">Market Price</div>
-        <div id="marketArea">
-          <div class="status-msg">No NFT selected</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <div id="blendPage" class="app-page">
   <div class="top-bar">
@@ -389,25 +296,6 @@
   </div>
 </div>
 
-<div aria-label="Mobile navigation" class="mobile-bottom-dock" id="mobileBottomDock">
-<button class="mobile-dock-btn is-menu" data-action="menu" type="button">
-<span class="dock-icon">☰</span>
-<span class="dock-label">Menu</span>
-</button>
-<button class="mobile-dock-btn" data-view="inventory" type="button">
-<span class="dock-icon">◫</span>
-<span class="dock-label">Inventory</span>
-</button>
-<button class="mobile-dock-btn is-active" data-view="preview" type="button">
-<span class="dock-icon">›</span>
-<span class="dock-label">Card</span>
-</button>
-<button class="mobile-dock-btn" data-view="details" type="button">
-<span class="dock-icon">⌁</span>
-<span class="dock-label">Data</span>
-</button>
-</div>
-
 <div class="wallet-modal" id="walletModal" aria-hidden="true">
   <div class="wallet-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="walletModalTitle">
     <div class="wallet-modal-header">
@@ -509,8 +397,6 @@ const ENDPOINTS = [
   'https://atomic.wax.eosrio.io/atomicassets/v1',
 ];
 let API = ENDPOINTS[0];
-const MARKET_ENDPOINTS = ENDPOINTS.map(endpoint => endpoint.replace('/atomicassets/', '/atomicmarket/'));
-let MARKET_API = MARKET_ENDPOINTS[0];
 const IPFS_GW = 'https://gateway.pinata.cloud/ipfs/';
 const IPFS_RESIZER = 'https://resizer.atomichub.io/images/v1/preview?ipfs=';
 const COLLECTION = 'planetdefnft';
@@ -534,8 +420,6 @@ const HYPERION_ENDPOINTS = [
 const WALLET_PROVIDER_STORAGE_KEY = 'pd.wallet.provider';
 const WALLET_ACCOUNT_STORAGE_KEY = 'pd.wallet.account';
 let collectionMeta = null;
-const marketPriceCache = new Map();
-let activeDetailsRequest = 0;
 let connectedWallet = '';
 let activeWalletProvider = '';
 let activeWalletPermission = 'active';
@@ -587,13 +471,6 @@ function updateWalletUi() {
 
   [
     {
-      indicator: document.getElementById('walletIndicator'),
-      account: document.getElementById('walletAccount'),
-      actionBtn: document.getElementById('anchorActionBtn'),
-      walletStatus: document.getElementById('walletStatus'),
-      label: document.querySelector('#walletStatus .wallet-label')
-    },
-    {
       indicator: document.getElementById('menuWalletIndicator'),
       account: document.getElementById('menuWalletAccount'),
       actionBtn: document.getElementById('menuAnchorActionBtn'),
@@ -625,19 +502,6 @@ function updateWalletUi() {
   }
 }
 
-function resetInventoryState(message = 'Connect a wallet above') {
-  allAssets = [];
-  filteredAssets = [];
-  renderedAssets = [];
-  schemaCounts = {};
-  collapsedTypeGroups = {};
-  ownershipFilter = 'all';
-  starFilterValue = 'all';
-  resetFilterControls();
-  buildSchemaFilters([]);
-  setItemList(`<div class="status-msg">${message}</div>`);
-  resetDetails();
-}
 
 function getWalletModal() {
   return document.getElementById('walletModal');
@@ -692,15 +556,15 @@ async function restoreWalletSession() {
     const state = await wharfWallet.restore();
     if (state?.account) {
       applyWharfWalletState(state);
-      await loadInventory();
+      await loadWalletAssets();
       return;
     }
     clearWalletConnection();
     updateWalletUi();
   } catch (error) {
     console.warn('WharfKit session restore failed', error);
+    resetWalletAssets();
     clearWalletConnection();
-    resetInventoryState();
     updateWalletUi();
   }
 }
@@ -714,8 +578,8 @@ async function disconnectWallet() {
   }
 
   activeWalletPermission = 'active';
+  resetWalletAssets();
   clearWalletConnection();
-  resetInventoryState();
 }
 
 // Detects touch/mobile devices where window.open() spawns a foreground tab
@@ -782,7 +646,7 @@ async function connectSelectedWallet(provider) {
     applyWharfWalletState(state);
 
     closeWalletModal();
-    await loadInventory();
+    await loadWalletAssets();
   } catch (error) {
     restoreWindowOpen?.();
     restoreWindowOpen = null;
@@ -861,221 +725,6 @@ async function fetchWithFallback(path) {
   throw new Error('All API endpoints failed. Try opening via a local server (not file://).');
 }
 
-async function fetchMarketWithFallback(path) {
-  const data = await fetchJsonFromEndpoints(MARKET_ENDPOINTS, base => base + path, {
-    logLabel: 'Market endpoint',
-    onSuccess: base => { MARKET_API = base; }
-  });
-  if (data) return data;
-  throw new Error('All market API endpoints failed.');
-}
-
-function formatPriceNumber(value) {
-  if (!Number.isFinite(value)) return 'N/A';
-  const abs = Math.abs(value);
-  const decimals = abs >= 100 ? 2 : abs >= 1 ? 4 : 6;
-  return value.toLocaleString('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: decimals
-  });
-}
-
-function formatTokenPrice(value, symbol='WAX') {
-  if (!Number.isFinite(value)) return `N/A ${symbol}`;
-  return `${value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: value >= 1 ? 4 : 6
-  })} ${symbol}`;
-}
-
-function extractSalePrice(sale) {
-  const priceObject = sale?.price;
-  if (priceObject && typeof priceObject === 'object') {
-    const amount = Number(priceObject.amount ?? priceObject.quantity ?? priceObject.value);
-    const precision = Number(priceObject.token_precision ?? priceObject.precision ?? 8);
-    const symbol = priceObject.token_symbol || priceObject.symbol || sale?.listing_symbol || 'WAX';
-    if (Number.isFinite(amount) && Number.isFinite(precision)) {
-      const numeric = amount / (10 ** precision);
-      return { numeric, symbol, display: formatTokenPrice(numeric, symbol) };
-    }
-  }
-
-  const rawListingPrice = Number(sale?.listing_price);
-  const listingPrecision = Number(sale?.price?.token_precision ?? sale?.token_precision ?? 8);
-  const listingSymbol = sale?.listing_symbol || sale?.price?.token_symbol || 'WAX';
-  if (Number.isFinite(rawListingPrice) && Number.isFinite(listingPrecision)) {
-    const numeric = rawListingPrice / (10 ** listingPrecision);
-    return { numeric, symbol: listingSymbol, display: formatTokenPrice(numeric, listingSymbol) };
-  }
-
-  const sellerAsk = sale?.seller_ask;
-  if (typeof sellerAsk === 'string') {
-    const match = sellerAsk.trim().match(/^([\d.,]+)\s+([A-Z]+)$/i);
-    if (match) {
-      const numeric = Number(match[1].replace(/,/g, ''));
-      const symbol = match[2];
-      return {
-        numeric: Number.isFinite(numeric) ? numeric : null,
-        symbol,
-        display: Number.isFinite(numeric) ? formatTokenPrice(numeric, symbol) : sellerAsk
-      };
-    }
-    return { numeric: null, symbol: 'WAX', display: sellerAsk };
-  }
-
-  return { numeric: null, symbol: 'WAX', display: 'N/A' };
-}
-
-function getMarketSectionId(item) {
-  return `market-price-${getAssetKey(item).replace(/[^a-z0-9_-]/gi, '-')}`;
-}
-
-function buildMarketSection(item, market={}) {
-  const {
-    lowestDisplay = 'Loading...',
-    href = '',
-    available = false
-  } = market;
-  const canSell = !!item?.asset_id && !String(item.asset_id).startsWith('missing-') && !item?.isMissing;
-  const sellHref = canSell ? `https://f12key.eu/asset/${item.asset_id}` : '#';
-  const buyAction = `<a class="market-link" href="${href || '#'}" target="_blank" rel="noopener noreferrer" aria-disabled="${available ? 'false' : 'true'}">
-        ${available ? 'Buy Lowest Listing' : 'No Listing Available'}
-      </a>`;
-  const sellAction = canSell ? `
-      <a class="market-link sell-link" href="${sellHref}" target="_blank" rel="noopener noreferrer" aria-disabled="false">
-        Sell This NFT
-      </a>` : '';
-  const marketActionsClass = canSell ? 'market-actions' : 'market-actions single-action';
-  return `<div class="market-block" id="${getMarketSectionId(item)}">
-    <div class="price-card">
-      <div class="price-label">Lowest Price</div>
-      <div class="price-value">${lowestDisplay}</div>
-    </div>
-    <div class="${marketActionsClass}">
-      ${buyAction}${sellAction}
-    </div>
-  </div>`;
-}
-
-function updateMarketSection(item, market) {
-  const section = document.getElementById(getMarketSectionId(item));
-  if (section) section.outerHTML = buildMarketSection(item, market);
-  else document.getElementById('marketArea').innerHTML = buildMarketSection(item, market);
-}
-
-async function loadMarketPrice(asset, requestId) {
-  const templateId = getTemplateId(asset);
-  const cacheKey = templateId ? `template:${templateId}` : `asset:${asset.asset_id}`;
-  if (marketPriceCache.has(cacheKey)) {
-    if (selectedAsset && getAssetKey(selectedAsset) === getAssetKey(asset) && activeDetailsRequest === requestId) {
-      updateMarketSection(asset, marketPriceCache.get(cacheKey));
-    }
-    return;
-  }
-
-  const params = new URLSearchParams({
-    state: '1',
-    collection_name: COLLECTION,
-    order: 'asc',
-    sort: 'price',
-    symbol: 'WAX',
-    limit: '5'
-  });
-  if (templateId) params.set('template_id', String(templateId));
-  else params.set('asset_id', String(asset.asset_id));
-
-  try {
-    const response = await fetchMarketWithFallback(`/sales?${params.toString()}`);
-    const sales = Array.isArray(response?.data) ? response.data : [];
-
-    if (!sales.length) {
-      const emptyState = {
-        lowestDisplay: 'Not Listed',
-        href: '',
-        available: false
-      };
-      marketPriceCache.set(cacheKey, emptyState);
-      if (selectedAsset && getAssetKey(selectedAsset) === getAssetKey(asset) && activeDetailsRequest === requestId) {
-        updateMarketSection(asset, emptyState);
-      }
-      return;
-    }
-
-    const parsedSales = sales
-      .map(sale => ({ sale, ...extractSalePrice(sale) }))
-      .filter(entry => Number.isFinite(entry.numeric));
-    const floorSale = parsedSales[0] || { sale: sales[0], ...extractSalePrice(sales[0]) };
-    const saleId = floorSale.sale?.sale_id || floorSale.sale?.listing_id || floorSale.sale?.id;
-
-    const marketState = {
-      lowestDisplay: floorSale.display,
-      href: saleId ? `https://f12key.eu/listing/${saleId}` : '',
-      available: Boolean(saleId)
-    };
-
-    marketPriceCache.set(cacheKey, marketState);
-    if (selectedAsset && getAssetKey(selectedAsset) === getAssetKey(asset) && activeDetailsRequest === requestId) {
-      updateMarketSection(asset, marketState);
-    }
-  } catch (error) {
-    console.warn('Unable to load market price', error);
-    const errorState = {
-      lowestDisplay: 'Unavailable',
-      href: '',
-      available: false
-    };
-    marketPriceCache.set(cacheKey, errorState);
-    if (selectedAsset && getAssetKey(selectedAsset) === getAssetKey(asset) && activeDetailsRequest === requestId) {
-      updateMarketSection(asset, errorState);
-    }
-  }
-}
-
-async function loadBlendItCta(asset, requestId) {
-  const block = document.getElementById('blendItBlock');
-  const slot = document.getElementById('blendItCta');
-  if (!block || !slot) return;
-
-  const templateId = getTemplateId(asset);
-  if (!templateId || typeof window.findBlendMatchesForTemplateId !== 'function') {
-    block.hidden = true;
-    slot.innerHTML = '';
-    return;
-  }
-
-  try {
-    const matches = await window.findBlendMatchesForTemplateId(templateId);
-    const isCurrentAsset =
-      selectedAsset &&
-      getAssetKey(selectedAsset) === getAssetKey(asset) &&
-      activeDetailsRequest === requestId;
-
-    if (!isCurrentAsset) return;
-
-    if (!Array.isArray(matches) || !matches.length) {
-      block.hidden = true;
-      slot.innerHTML = '';
-      return;
-    }
-
-    const blendId = String(matches[0].blend_id || '');
-    block.hidden = false;
-    slot.innerHTML = '<button class="market-link" type="button">BLEND IT</button>';
-    const button = slot.querySelector('button');
-    if (button) {
-      button.addEventListener('click', () => {
-        window._deepLinkIntent = { page: 'blend', id: blendId, view: 'recipe' };
-        openBlendPage();
-      });
-    }
-  } catch (error) {
-    console.warn('Unable to resolve blend CTA', error);
-    if (selectedAsset && getAssetKey(selectedAsset) === getAssetKey(asset) && activeDetailsRequest === requestId) {
-      block.hidden = true;
-      slot.innerHTML = '';
-    }
-  }
-}
 
 function ipfsToHttp(value) {
   if (!value || typeof value !== 'string') return '';
@@ -1108,38 +757,9 @@ function pickCollectionImage(collection) {
   return ipfsToHttp(match || '');
 }
 
-function updateCollectionBanner(collection) {
-  const banner = document.getElementById('collectionBanner');
-  const logo = document.getElementById('collectionLogo');
-  const nameEl = document.getElementById('collectionName');
-  const metaEl = document.getElementById('collectionMeta');
-
-  const displayName = collection?.name || formatCollectionLabel(COLLECTION);
-  const author = collection?.author ? ` by ${collection.author}` : '';
-  const image = pickCollectionImage(collection);
-
-  nameEl.textContent = displayName;
-  metaEl.textContent = `${COLLECTION}${author}`;
-
-  if (image) {
-    logo.src = image;
-    logo.hidden = false;
-    banner.hidden = false;
-    logo.onerror = () => {
-      logo.hidden = true;
-      banner.hidden = true;
-    };
-    return;
-  }
-
-  logo.removeAttribute('src');
-  logo.hidden = true;
-  banner.hidden = true;
-}
 
 async function loadCollectionMeta() {
   if (collectionMeta) {
-    updateCollectionBanner(collectionMeta);
     return collectionMeta;
   }
 
@@ -1153,119 +773,24 @@ async function loadCollectionMeta() {
     }
 
     collectionMeta = collection || { name: formatCollectionLabel(COLLECTION) };
-    updateCollectionBanner(collectionMeta);
     return collectionMeta;
   } catch (e) {
     console.warn('Unable to load collection metadata', e);
     collectionMeta = { name: formatCollectionLabel(COLLECTION) };
-    updateCollectionBanner(collectionMeta);
     return collectionMeta;
   }
 }
 
-let allAssets = [], filteredAssets = [], renderedAssets = [], currentSchema = 'all', selectedAsset = null, schemaCounts = {}, collapsedTypeGroups = {};
-let ownershipFilter = 'all';
-let starFilterValue = 'all';
 let ownedAssets = [], collectionTemplates = [];
-const INVENTORY_EXCLUDED_TEMPLATE_IDS = new Set(['888545']);
-const INVENTORY_TEMPLATE_SORT_ID_OVERRIDES = { '888549': 888545 };
-const INVENTORY_TEMPLATE_SORT_TEMPLATE_OVERRIDES = { '888549': '888545' };
-
-function getAssetKey(asset) {
-  if (!asset) return '';
-  if (asset.isMissing) return `template:${asset.template?.template_id || asset.template_id || asset.asset_id || 'missing'}`;
-  return asset.asset_id ? `asset:${asset.asset_id}` : `template:${asset.template?.template_id || asset.template_id || 'unknown'}`;
-}
 
 function getTemplateId(asset) {
   return asset?.template?.template_id || asset?.template_id || null;
-}
-
-function isInventoryExcludedTemplateId(templateId) {
-  return INVENTORY_EXCLUDED_TEMPLATE_IDS.has(String(templateId || ''));
-}
-
-function getInventoryTemplateSortId(asset) {
-  const templateId = String(getTemplateId(asset) || '');
-  const sortId = INVENTORY_TEMPLATE_SORT_ID_OVERRIDES[templateId] ?? templateId;
-  const number = Number(sortId || 0);
-  return Number.isFinite(number) ? number : 0;
-}
-
-function getInventorySortTemplate(asset) {
-  const templateId = String(getTemplateId(asset) || '');
-  const sortTemplateId = INVENTORY_TEMPLATE_SORT_TEMPLATE_OVERRIDES[templateId];
-  if (!sortTemplateId) return asset?.template || null;
-  return collectionTemplates.find(template => String(template?.template_id) === sortTemplateId) || asset?.template || null;
-}
-
-function getInventorySortAsset(asset) {
-  const sortTemplate = getInventorySortTemplate(asset);
-  if (!sortTemplate || sortTemplate === asset?.template) return asset;
-  return {
-    ...asset,
-    template: sortTemplate,
-    template_id: sortTemplate.template_id,
-    data: {}
-  };
-}
-
-function getInventoryMintSortValue(asset) {
-  const templateId = String(getTemplateId(asset) || '');
-  if (INVENTORY_TEMPLATE_SORT_TEMPLATE_OVERRIDES[templateId]) return 0;
-  return asset?.template_mint || 0;
 }
 
 function getAssetSchemaName(asset) {
   return asset?.schema?.schema_name || asset?.template?.schema?.schema_name || asset?.template?.schema_name || 'unknown';
 }
 
-function getIssuedSupply(template) {
-  return null;
-}
-
-function isTemplateDisplayable(template) {
-  return Boolean(template?.template_id) && !isInventoryExcludedTemplateId(template.template_id);
-}
-
-function createMissingAssetFromTemplate(template) {
-  return {
-    asset_id: `missing-${template.template_id}`,
-    template_id: template.template_id,
-    template,
-    schema: template.schema || { schema_name: template.schema_name || 'unknown' },
-    data: {},
-    template_mint: null,
-    isMissing: true
-  };
-}
-
-function buildDisplayAssets(owned, templates) {
-  const displayOwned = owned.filter(asset => !isInventoryExcludedTemplateId(getTemplateId(asset)));
-  const ownedTemplateIds = new Set();
-  displayOwned.forEach(asset => {
-    const templateId = getTemplateId(asset);
-    if (templateId) ownedTemplateIds.add(String(templateId));
-  });
-  const missingAssets = templates
-    .filter(isTemplateDisplayable)
-    .filter(template => !ownedTemplateIds.has(String(template.template_id)))
-    .map(createMissingAssetFromTemplate);
-  return [...displayOwned, ...missingAssets];
-}
-
-function rebuildSchemaCounts(assets) {
-  schemaCounts = {};
-  const grouped = new Map();
-  assets.forEach(asset => {
-    const key = getTemplateId(asset) ? `template:${getTemplateId(asset)}` : getAssetKey(asset);
-    if (!grouped.has(key)) grouped.set(key, asset);
-  });
-  grouped.forEach(asset => {
-    const schema = getAssetSchemaName(asset);
-    schemaCounts[schema] = (schemaCounts[schema] || 0) + 1;
-  });
-}
 
 async function loadCollectionTemplates() {
   if (collectionTemplates.length) return collectionTemplates;
@@ -1329,70 +854,40 @@ function reconcileOwnedAssetsForSync(previousAssets, nextAssets) {
   return Array.isArray(nextAssets) ? nextAssets : [];
 }
 
-// ── LOAD ─────────────────────────────────────────────────────
-async function loadInventory() {
+// ── WALLET ASSETS ────────────────────────────────────────────
+// Charge le catalogue de templates de la collection et les assets possédés par
+// le wallet connecté (consommés par le Blend Organizer : ingrédients, ascend,
+// sacrifice). Ne lève jamais : les appelants (dont un Promise.all du suivi de
+// résultat de blend) comptent dessus. Les erreurs sont seulement loggées.
+let walletAssetsRequestCounter = 0;
+async function loadWalletAssets() {
   const wallet = getActiveWallet();
-  const currentRequest = Date.now();
-  loadInventory.requestId = currentRequest;
-
-  setItemList('<div class="status-msg"><span class="spinner"></span>Scanning collection catalog…</div>');
-  showEmptyCard();
-  resetDetails();
-  allAssets = []; ownedAssets = []; collectionTemplates = []; schemaCounts = {}; collapsedTypeGroups = {}; renderedAssets = [];
+  const currentRequest = ++walletAssetsRequestCounter;
+  collectionTemplates = [];
 
   try {
     await loadCollectionMeta();
-
-    // ── Phase 1 : charger les templates de la collection (sans wallet)
     await loadCollectionTemplates();
-    if (loadInventory.requestId !== currentRequest) return;
+    if (walletAssetsRequestCounter !== currentRequest) return;
 
-    if (!collectionTemplates.length) {
-      setItemList(`<div class="status-msg">No issued <strong>${COLLECTION}</strong> NFTs found.</div>`);
-      buildSchemaFilters([]);
-      return;
-    }
-
-    // Afficher tout de suite la collection complète (tout grisé, isMissing)
-    allAssets = buildDisplayAssets([], collectionTemplates);
-    rebuildSchemaCounts(allAssets);
-    buildSchemaFilters(Object.keys(schemaCounts));
-    filterSchema(currentSchema || 'all', document.querySelector(`[data-schema="${currentSchema || 'all'}"]`) || document.querySelector('[data-schema="all"]'));
-
-    // ── Phase 2 : si wallet connecté, charger les owned assets
-    if (wallet) {
-      setItemList('<div class="status-msg"><span class="spinner"></span>Loading your NFTs…</div>');
-      ownedAssets = await fetchOwnedAssetsForWallet(wallet);
-
-      if (loadInventory.requestId !== currentRequest) return;
-
-      // Fusionner : owned + templates non possédés (grisés)
-      allAssets = buildDisplayAssets(ownedAssets, collectionTemplates);
-      rebuildSchemaCounts(allAssets);
-      buildSchemaFilters(Object.keys(schemaCounts));
-      filterSchema(currentSchema || 'all', document.querySelector(`[data-schema="${currentSchema || 'all'}"]`) || document.querySelector('[data-schema="all"]'));
-    }
-
-  } catch(e) {
-    console.error(e);
-    setItemList(`<div class="status-msg" style="color:#e74c3c">Error: ${e.message}</div>`);
+    const nextOwnedAssets = wallet ? await fetchOwnedAssetsForWallet(wallet) : [];
+    if (walletAssetsRequestCounter !== currentRequest) return;
+    if (getActiveWallet() !== wallet) return;
+    ownedAssets = nextOwnedAssets;
+  } catch (error) {
+    console.error('Unable to load wallet assets', error);
   }
+}
 
-  // Deep link intent
-  const intent = window._deepLinkIntent;
-  if (intent?.page === 'inventory') {
-    window._deepLinkIntent = null;
-    const match = allAssets.find(a =>
-      intent.type === 'template' ? String(getTemplateId(a)) === intent.id : false
-    );
-    if (match) selectItem(match, null);
-  }
+function resetWalletAssets() {
+  walletAssetsRequestCounter += 1;
+  ownedAssets = [];
 }
 
 let walletSyncInProgress = false;
 
 function setWalletSyncUi(isSyncing) {
-  document.querySelectorAll('#inventorySyncBtn, #blendSyncBtn, #inventoryPanelSyncBtn, #blendPanelSyncBtn').forEach(button => {
+  document.querySelectorAll('#blendSyncBtn, #blendPanelSyncBtn').forEach(button => {
     button.disabled = !!isSyncing;
     if (button.classList.contains('hub-sync-btn')) {
       button.textContent = isSyncing ? 'Syncing...' : 'Sync Data';
@@ -1405,41 +900,6 @@ async function syncWalletData() {
   walletSyncInProgress = true;
   setWalletSyncUi(true);
 
-  const previousState = {
-    allAssets: [...allAssets],
-    ownedAssets: [...ownedAssets],
-    filteredAssets: [...filteredAssets],
-    renderedAssets: [...renderedAssets],
-    schemaCounts: { ...schemaCounts },
-    collapsedTypeGroups: { ...collapsedTypeGroups },
-    selectedAsset,
-    currentSchema,
-    itemListHtml: document.getElementById('itemList')?.innerHTML || '',
-    schemaListHtml: document.getElementById('schemaList')?.innerHTML || '',
-    cardAreaHtml: document.getElementById('cardArea')?.innerHTML || '',
-    detailsAreaHtml: document.getElementById('detailsArea')?.innerHTML || '',
-    marketAreaHtml: document.getElementById('marketArea')?.innerHTML || ''
-  };
-
-  const restorePreviousInventoryView = () => {
-    allAssets = previousState.allAssets;
-    ownedAssets = previousState.ownedAssets;
-    filteredAssets = previousState.filteredAssets;
-    renderedAssets = previousState.renderedAssets;
-    schemaCounts = previousState.schemaCounts;
-    collapsedTypeGroups = previousState.collapsedTypeGroups;
-    selectedAsset = previousState.selectedAsset;
-    currentSchema = previousState.currentSchema;
-    const cardArea = document.getElementById('cardArea');
-    const detailsArea = document.getElementById('detailsArea');
-    const marketArea = document.getElementById('marketArea');
-    buildSchemaFilters(Object.keys(schemaCounts));
-    filterSchema(currentSchema || 'all', document.querySelector(`[data-schema="${currentSchema || 'all'}"]`) || document.querySelector('[data-schema="all"]'));
-    if (cardArea) cardArea.innerHTML = previousState.cardAreaHtml;
-    if (detailsArea) detailsArea.innerHTML = previousState.detailsAreaHtml;
-    if (marketArea) marketArea.innerHTML = previousState.marketAreaHtml;
-  };
-
   try {
     const wallet = getActiveWallet();
     if (!wallet) {
@@ -1449,34 +909,9 @@ async function syncWalletData() {
 
     await loadCollectionMeta();
     await loadCollectionTemplates();
-
-    const selectedKey = selectedAsset ? getAssetKey(selectedAsset) : '';
-    const selectedTemplateId = selectedAsset ? String(getTemplateId(selectedAsset) || '') : '';
     const nextOwnedAssets = await fetchOwnedAssetsForWallet(wallet);
-
+    if (getActiveWallet() !== wallet) return;
     ownedAssets = reconcileOwnedAssetsForSync(ownedAssets, nextOwnedAssets);
-    allAssets = buildDisplayAssets(ownedAssets, collectionTemplates);
-    rebuildSchemaCounts(allAssets);
-
-    const nextSelected = (selectedKey || selectedTemplateId)
-      ? allAssets.find(asset => getAssetKey(asset) === selectedKey)
-        || allAssets.find(asset => selectedTemplateId && String(getTemplateId(asset) || '') === selectedTemplateId)
-      : null;
-    if (nextSelected) selectedAsset = nextSelected;
-
-    const nextSchema = currentSchema && (currentSchema === 'all' || schemaCounts[currentSchema]) ? currentSchema : 'all';
-    currentSchema = nextSchema;
-    buildSchemaFilters(Object.keys(schemaCounts));
-    filterSchema(nextSchema, document.querySelector(`[data-schema="${nextSchema}"]`) || document.querySelector('[data-schema="all"]'));
-
-    if (selectedKey || selectedTemplateId) {
-      if (nextSelected) {
-        renderCard(nextSelected);
-        renderDetails(nextSelected);
-      } else {
-        resetDetails();
-      }
-    }
 
     if (typeof window.blendRefreshWalletData === 'function') {
       window.blendRefreshWalletData();
@@ -1485,141 +920,20 @@ async function syncWalletData() {
       if (typeof window.blendRenderSelected === 'function') window.blendRenderSelected();
     }
   } catch (error) {
+    // ownedAssets n'est remplacé qu'après un fetch complet : rien à restaurer.
     console.error('Wallet data sync failed', error);
-    restorePreviousInventoryView();
   } finally {
     walletSyncInProgress = false;
     setWalletSyncUi(false);
   }
 }
 
-// ── SCHEMAS ──────────────────────────────────────────────────
-function buildSchemaFilters(schemas) {
-  const list = document.getElementById('schemaList');
-  list.innerHTML = '';
-  list.appendChild(makeSchemaItem('all','All NFTs',allAssets.length));
-  schemas.sort().forEach(s => list.appendChild(makeSchemaItem(s,formatSchemaName(s),schemaCounts[s])));
-}
-function makeSchemaItem(schema, label, count) {
-  const div = document.createElement('div');
-  div.className = 'cat-item'+(schema===currentSchema?' active':'');
-  div.dataset.schema = schema;
-  div.innerHTML = `<span class="cat-dot"></span> ${label} <span class="badge-count">${count}</span>`;
-  div.onclick = () => filterSchema(schema, div);
-  return div;
-}
+// ── ASSET HELPERS ────────────────────────────────────────────
 function formatSchemaName(s) {
   return s.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
-
-// ── FILTER / SORT ────────────────────────────────────────────
-function filterSchema(schema, el) {
-  currentSchema = schema;
-  document.querySelectorAll('.cat-item').forEach(e=>e.classList.remove('active'));
-  if (el) el.classList.add('active');
-  filteredAssets = schema==='all' ? [...allAssets] : allAssets.filter(a => getAssetSchemaName(a) === schema);
-  applySort();
-}
 const RARITY_ORDER = {mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5,'':6};
 function getRarity(a) { const d={...a.data,...a.template?.immutable_data}; return (d.rarity||d.Rarity||'').toLowerCase(); }
-function compareAssets(a, b, sort, direction='asc') {
-  const multiplier = direction === 'desc' ? -1 : 1;
-  const sortA = getInventorySortAsset(a);
-  const sortB = getInventorySortAsset(b);
-  if (sort==='rarity') {
-    return (((RARITY_ORDER[getRarity(sortB)]??6)-(RARITY_ORDER[getRarity(sortA)]??6)) * multiplier)
-      || getName(sortA).localeCompare(getName(sortB))
-      || ((getInventoryTemplateSortId(a) - getInventoryTemplateSortId(b)) * multiplier);
-  }
-  if (sort==='name') {
-    return (getName(sortA).localeCompare(getName(sortB)) * multiplier)
-      || ((getInventoryTemplateSortId(a) - getInventoryTemplateSortId(b)) * multiplier);
-  }
-  if (sort==='mint') {
-    return ((getInventoryMintSortValue(a)-getInventoryMintSortValue(b)) * multiplier)
-      || ((getInventoryTemplateSortId(a) - getInventoryTemplateSortId(b)) * multiplier)
-      || getName(sortA).localeCompare(getName(sortB));
-  }
-  return 0;
-}
-function parseInventorySortValue(value) {
-  const raw = String(value || 'rarity-asc');
-  const [sort = 'rarity', direction = 'asc'] = raw.split('-');
-  return {
-    sort: ['rarity', 'name', 'mint'].includes(sort) ? sort : 'rarity',
-    direction: direction === 'desc' ? 'desc' : 'asc'
-  };
-}
-function syncInventoryStarFilterButtons() {
-  const selected = starFilterValue === 'all' ? 0 : Number(starFilterValue || 0);
-  document.querySelectorAll('.inventory-star-btn').forEach(button => {
-    const value = Number(button.dataset.starFilter || 0);
-    const active = selected > 0 && value <= selected;
-    button.classList.toggle('is-active', active);
-    button.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
-function setInventoryStarFilter(value) {
-  const next = String(value);
-  starFilterValue = starFilterValue === next ? 'all' : next;
-  syncInventoryStarFilterButtons();
-  applySort();
-}
-function resetFilterControls() {
-  const ownershipFilterEl = document.getElementById('ownershipFilter');
-  const inventorySearchEl = document.getElementById('inventorySearchInput');
-  const sortSelectEl = document.getElementById('sortSelect');
-  if (ownershipFilterEl) ownershipFilterEl.value = 'all';
-  if (inventorySearchEl) inventorySearchEl.value = '';
-  if (sortSelectEl) sortSelectEl.value = 'rarity-asc';
-  starFilterValue = 'all';
-  syncInventoryStarFilterButtons();
-}
-function applySort() {
-  const { sort, direction } = parseInventorySortValue(document.getElementById('sortSelect')?.value);
-  ownershipFilter = document.getElementById('ownershipFilter')?.value || 'all';
-  const query = (document.getElementById('inventorySearchInput')?.value || '').trim().toLowerCase();
-  syncInventoryStarFilterButtons();
-  
-  const arr = filteredAssets.filter(asset => {
-    // Ownership filter
-    if (ownershipFilter === 'owned') {
-      if (asset.isMissing) return false;
-    } else if (ownershipFilter === 'missing') {
-      if (!asset.isMissing) return false;
-    }
-
-    if (query) {
-      const haystack = [
-        getName(asset),
-        getRarity(asset),
-        getItemType(asset),
-        getAssetSchemaName(asset),
-        getTemplateId(asset),
-        asset.asset_id
-      ].join(' ').toLowerCase();
-      if (!haystack.includes(query)) return false;
-    }
-    
-    // Star filter
-    if (starFilterValue !== 'all') {
-      const data = {...asset.template?.immutable_data, ...asset.data};
-      const { count: assetStars } = getStarInfo(data);
-      const filterStarCount = Number(starFilterValue);
-      if (assetStars !== filterStarCount) return false;
-    }
-    
-    return true;
-  });
-  arr.sort((a,b)=>compareAssets(a, b, sort, direction));
-  renderItemList(arr);
-}
-function toggleTypeGroup(schema) {
-  collapsedTypeGroups[schema] = !collapsedTypeGroups[schema];
-  renderItemList(renderedAssets);
-}
-
-// ── HELPERS ──────────────────────────────────────────────────
 function getName(a) { const d={...a.template?.immutable_data,...a.data}; return d.name||d.Name||a.name||`#${a.asset_id}`; }
 function getStarInfo(data = {}) {
   const raw = data.stars ?? data.star ?? data.Stars ?? data.Star ?? data.rarity_stars ?? '';
@@ -1641,10 +955,6 @@ function getStarInfo(data = {}) {
   return { count: 0, raw: value };
 }
 function getImg(a)  { const d={...a.template?.immutable_data,...a.data}; const h=d.img||d.image||d.Image||''; if(!h) return null; if(h.startsWith('http')) return h; const hash=h.startsWith('ipfs://')?h.slice(7):h; return IPFS_GW+hash; }
-function getItemType(a) {
-  const d={...a.template?.immutable_data,...a.data};
-  return d.type||d.Type||d.unit_type||d.UnitType||d.class||d.Class||'Unknown Type';
-}
 function getSchemaEmoji(schema) {
   const map={weapon:'⚔️',weapons:'⚔️',armor:'🛡️',armour:'🛡️',ship:'🚀',ships:'🚀',creature:'👾',creatures:'👾',artifact:'💎',artifacts:'💎',consumable:'🧪',consumables:'🧪',key:'🗝️',keys:'🗝️',booster:'⚡',boosters:'⚡',hero:'🧑‍🚀',heroes:'🧑‍🚀',planet:'🌍',planets:'🌍',lux:'✨',lava:'🌋'};
   const s=(schema||'').toLowerCase();
@@ -1652,325 +962,9 @@ function getSchemaEmoji(schema) {
   return '📦';
 }
 
-// ── RENDER LIST ──────────────────────────────────────────────
-function renderItemList(assets) {
-  const ul = document.getElementById('itemList');
-  const { sort, direction } = parseInventorySortValue(document.getElementById('sortSelect')?.value);
-  renderedAssets = [...assets];
-  if (!assets.length) {
-    const emptyLabel = ownershipFilter === 'owned'
-      ? 'No owned NFTs in this category'
-      : ownershipFilter === 'missing'
-        ? 'No missing NFTs in this category'
-        : 'No NFTs in this category';
-    ul.innerHTML = `<div class="status-msg">${emptyLabel}</div>`;
-    return;
-  }
-
-  const groups = {};
-  assets.forEach(a => {
-    const tid = getTemplateId(a) || a.asset_id;
-    if (!groups[tid]) groups[tid] = { asset: a, count: 0 };
-    if (!a.isMissing) groups[tid].count++;
-  });
-
-  const schemaGroups = {};
-  Object.values(groups).forEach(group => {
-    const schema = getAssetSchemaName(group.asset);
-    if (!schemaGroups[schema]) schemaGroups[schema] = [];
-    schemaGroups[schema].push(group);
-  });
-
-  ul.innerHTML = '';
-  Object.entries(schemaGroups)
-    .sort(([schemaA], [schemaB]) => formatSchemaName(schemaA).localeCompare(formatSchemaName(schemaB)))
-    .forEach(([schema, schemaItems]) => {
-      schemaItems.sort((a, b) => compareAssets(a.asset, b.asset, sort, direction));
-      const schemaHeading = document.createElement('div');
-      schemaHeading.className = 'item-schema-heading';
-      schemaHeading.textContent =
-        currentSchema === 'all'
-          ? formatSchemaName(schema)
-          : formatSchemaName(schema);
-      ul.appendChild(schemaHeading);
-
-      const typeGroups = {};
-      schemaItems.forEach(group => {
-        const type = getItemType(group.asset);
-        if (!typeGroups[type]) typeGroups[type] = [];
-        typeGroups[type].push(group);
-      });
-
-      Object.entries(typeGroups)
-        .sort(([typeA], [typeB]) => formatSchemaName(typeA).localeCompare(formatSchemaName(typeB)))
-        .forEach(([type, typeItems]) => {
-          typeItems.sort((a, b) => compareAssets(a.asset, b.asset, sort, direction));
-          const totalEntries = typeItems.length;
-          const groupKey = `${schema}::${type}`;
-          const section = document.createElement('div');
-          section.className = 'item-type-group';
-
-          const toggle = document.createElement('button');
-          toggle.type = 'button';
-          toggle.className = 'item-type-toggle';
-          toggle.innerHTML = `
-            <span class="item-type-label">
-              <span class="item-type-caret">${collapsedTypeGroups[groupKey] ? '▸' : '▾'}</span>
-              <span>${formatSchemaName(type)}</span>
-            </span>
-            <span class="item-type-count">${totalEntries} ${totalEntries > 1 ? 'Entries' : 'Entry'}</span>`;
-          toggle.onclick = () => toggleTypeGroup(groupKey);
-          section.appendChild(toggle);
-
-          const itemsWrap = document.createElement('div');
-          itemsWrap.className = 'item-type-items' + (collapsedTypeGroups[groupKey] ? ' is-collapsed' : '');
-
-          typeItems.forEach(({asset:a,count}) => {
-            const div = document.createElement('div');
-            const isSelected = selectedAsset && getAssetKey(selectedAsset) === getAssetKey(a);
-            div.className = 'item-row' + (a.isMissing ? ' is-missing' : '') + (isSelected ? ' selected' : '');
-            div.onclick = () => selectItem(a, div);
-            const imgSrc=getImg(a), name=getName(a), itemSchema=getAssetSchemaName(a), rarity=getRarity(a);
-            const data={...a.template?.immutable_data,...a.data};
-            const { count: starCount } = getStarInfo(data);
-            const nameWithStars = starCount > 0 ? `${name} ${'⭐'.repeat(starCount)}` : name;
-            const subLabel = currentSchema === 'all' ? formatSchemaName(itemSchema) : formatSchemaName(type);
-            div.innerHTML = `
-              ${imgSrc?`<img class="item-thumb" src="${imgSrc}" alt="${name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-              <div class="item-thumb-placeholder" style="${imgSrc?'display:none':''}">${getSchemaEmoji(itemSchema)}</div>
-              <div class="item-info">
-                <div class="item-name ${rarity?'rarity-'+rarity:''}">${nameWithStars}</div>
-                <div class="item-sub">${subLabel}${a.isMissing ? ' · Not owned' : ''}</div>
-              </div>
-              <div class="item-qty">${a.isMissing ? 'x0' : 'x'+count}</div>`;
-            itemsWrap.appendChild(div);
-          });
-
-          section.appendChild(itemsWrap);
-          ul.appendChild(section);
-        });
-    });
-}
-
-// ── SELECT ───────────────────────────────────────────────────
-function selectItem(asset, el) {
-  selectedAsset = asset;
-  document.querySelectorAll('.item-row').forEach(r => r.classList.remove('selected'));
-  if (el) el.classList.add('selected');
-  setMobileInventoryOpen(false);
-  renderCard(asset); renderDetails(asset);
-  if (isMobileMenuMode()) setMobileView('preview');
-  // ── Sync URL
-  // APRÈS
-const templateId = getTemplateId(asset);
-if (templateId) {
-  history.replaceState(null, '', `#inventory-template-${templateId}`);
-}
-}
-
-// ── CARD ─────────────────────────────────────────────────────
-function renderCard(a) {
-  const name=getName(a), imgSrc=getImg(a), schema=formatSchemaName(getAssetSchemaName(a) || 'Item');
-  const data={...a.template?.immutable_data,...a.data};
-  const { count: stars } = getStarInfo(data);
-  const rarity=getRarity(a);
-  const starHtml=Array.from({length:5},(_,i)=>`<span class="star ${i<stars?'on':'off'}">★</span>`).join('');
-  const emoji=getSchemaEmoji(getAssetSchemaName(a));
-  document.getElementById('cardArea').innerHTML=`
-    <div class="card-preview">
-      <div class="nft-card">
-        <div class="nft-img-wrap">
-        ${imgSrc
-          ?`<img src="${imgSrc}" alt="${name}" onerror="this.parentNode.innerHTML='<div class=\\'img-placeholder\\'>${emoji}</div>'">`
-          :`<div class="img-placeholder">${emoji}</div>`}
-      </div>
-      <div class="nft-footer">
-        <div class="nft-name ${rarity?'rarity-'+rarity:''}">${name}</div>
-        <div class="nft-type">${schema}</div>
-        ${stars?`<div class="star-row">${starHtml}</div>`:''}
-        <div class="led-row"><div class="led"></div></div>
-      </div>
-    </div>
-    <div class="card-meta">${a.isMissing ? `Template #${getTemplateId(a) || '—'} &nbsp;|&nbsp; Not owned` : `Mint #${a.template_mint||'—'} &nbsp;|&nbsp; ID ${a.asset_id}`}</div>`;
-}
-function showEmptyCard() {
-  document.getElementById('cardArea').innerHTML=`<div class="empty-card"><div class="status-msg" style="margin-top:40px">Select an NFT from your inventory</div></div>`;
-}
-
-// ── DETAILS ──────────────────────────────────────────────────
-function renderDetails(a) {
-  const requestId = ++activeDetailsRequest;
-  const data = {...a.template?.immutable_data,...a.data};
-  const rarity = getRarity(a);
-
-  // Ordre : attack, defense → movecost/reduction → crewslot → reste
-  // Chaque entrée : [clé principale, ...alias] pour chercher dans data
-  const STAT_DEFS = [
-    { keys:['attack','Attack'],                              icon:'⚔️',  label:'Attack' },
-    { keys:['defense','Defense','defence','Defence'],        icon:'🛡️',  label:'Defense' },
-    { keys:['movecost','MoveCost','move_cost','move cost'],  icon:'🦶',  label:'Move Cost' },
-    { keys:['movecost_reduction','MovecostReduction','move_cost_reduction','move cost reduction'], icon:'🦶', label:'Move Cost Reduction' },
-    { keys:['crewslot','CrewSlot','crew_slot','crew slot'],  icon:'👥',  label:'Crew Slot' },
-    { keys:['hp','HP','Hp'],                                 icon:'❤️',  label:'HP' },
-    { keys:['health','Health'],                              icon:'❤️',  label:'Health' },
-    { keys:['power','Power'],                                icon:'⚡',  label:'Power' },
-    { keys:['speed','Speed'],                                icon:'💨',  label:'Speed' },
-    { keys:['shield','Shield'],                              icon:'🔵',  label:'Shield' },
-    { keys:['damage','Damage'],                              icon:'💥',  label:'Damage' },
-    { keys:['energy','Energy'],                              icon:'🔋',  label:'Energy' },
-    { keys:['fuel','Fuel'],                                  icon:'⛽',  label:'Fuel' },
-  ];
-
-  // Trouver la valeur pour chaque stat en testant tous les alias
-  const stats = [];
-  const usedKeys = new Set();
-  STAT_DEFS.forEach(def => {
-    for (const k of def.keys) {
-      if (data[k] !== undefined && data[k] !== null && data[k] !== '' && +data[k] !== 0) {
-        stats.push({ label: def.label, icon: def.icon, val: data[k] });
-        def.keys.forEach(alias => usedKeys.add(alias));
-        break;
-      }
-    }
-  });
-
-  // Clés à exclure des attributs
-  const descEntry = Object.entries(data).find(([k, v]) => {
-    if (v === undefined || v === null || v === '') return false;
-    const normalized = k.toLowerCase().replace(/[\s_-]+/g, '');
-    return normalized === 'desc' || normalized === 'description' || normalized.endsWith('description');
-  });
-  const desc = descEntry ? descEntry[1] : '';
-  const starInfo = getStarInfo(data);
-
-  const SKIP = new Set([
-    'img','image','Image','video','name','Name','description','Description','desc',
-    'rarity','Rarity','stars','Stars','star','rarity_stars',
-    ...usedKeys,
-    ...STAT_DEFS.flatMap(d=>d.keys)
-  ]);
-  if (descEntry) SKIP.add(descEntry[0]);
-  const attrs = Object.entries(data).filter(([k,v])=>!SKIP.has(k)&&v!==''&&v!==null&&typeof v!=='object');
-
-  let html = '';
-
-  if (stats.length) {
-    html += `<div class="stats-block"><div class="stats-grid">`;
-    stats.forEach(({label,icon,val}) => {
-      html += `<div class="stat-row">
-        <div class="stat-icon">${icon}</div>
-        <div class="stat-label">${label}</div>
-        <div class="stat-badge">${val}</div>
-      </div>`;
-    });
-    html += `</div></div>`;
-  }
-
-  if (rarity) {
-    html += `<div class="rarity-line">
-      <span>Rarity</span>
-      <span class="rarity-${rarity}" style="font-weight:700;margin-left:auto;text-transform:capitalize">${rarity}</span>
-    </div>`;
-  }
-
-  if (desc) {
-    html += `<div class="desc-block">
-      <div class="desc-title">Description</div>
-      <div class="desc-text">${desc}</div>
-    </div>`;
-  }
-
-  if (attrs.length || starInfo.count > 0) {
-    html += `<div class="attrs-block">
-      <div class="desc-title" style="margin-bottom:6px">Attributes</div>
-      <div class="attr-grid">`;
-    if (starInfo.count > 0) {
-      html += `<div class="attr-chip"><span class="k">Star</span><span class="v">${starInfo.raw}</span></div>`;
-    }
-    attrs.slice(0,8).forEach(([k,v]) => {
-      html += `<div class="attr-chip"><span class="k">${k}</span><span class="v">${v}</span></div>`;
-    });
-    html += `</div></div>`;
-  }
-
-  if (!stats.length && !desc && !attrs.length && starInfo.count <= 0) {
-    html += `<div class="status-msg" style="margin:20px 0">${a.isMissing ? 'No extra data for this collection entry.' : 'No extra data for this NFT.'}</div>`;
-  }
-
-  html += '<div class="blend-it-block" id="blendItBlock" hidden><div id="blendItCta"></div></div>';
-  document.getElementById('detailsArea').innerHTML = html;
-  document.getElementById('marketArea').innerHTML = buildMarketSection(a);
-  loadMarketPrice(a, requestId);
-  loadBlendItCta(a, requestId);
-}
-
-function resetDetails() {
-  document.getElementById('detailsArea').innerHTML='<div class="status-msg" style="margin-top:40px">No NFT selected</div>';
-  document.getElementById('marketArea').innerHTML='<div class="status-msg">No NFT selected</div>';
-  selectedAsset=null; showEmptyCard();
-}
-function setItemList(html) { document.getElementById('itemList').innerHTML=html; }
-function isMobileMenuMode() { return window.innerWidth <= MOBILE_MENU_BREAKPOINT; }
-let mobileView = 'preview';
-function setMobileView(view) {
-  const allowed = ['inventory', 'preview', 'details'];
-  const nextView = allowed.includes(view) ? view : 'preview';
-  mobileView = nextView;
-  document.body.classList.remove('mobile-view-inventory', 'mobile-view-preview', 'mobile-view-details');
-  if (isMobileMenuMode()) {
-    document.body.classList.add(`mobile-view-${nextView}`);
-  }
-  document.querySelectorAll('.mobile-dock-btn').forEach(btn => {
-    const active = btn.dataset.view === nextView;
-    btn.classList.toggle('is-active', active);
-    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
-function setMobileInventoryOpen(open) {
-  if (isMobileMenuMode()) {
-    setMobileView(open ? 'inventory' : (selectedAsset ? 'preview' : 'inventory'));
-    return;
-  }
-  document.body.classList.toggle('mobile-menu-open', !!open);
-  const btn = document.getElementById('mobileMenuBtn');
-  if (btn) {
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  }
-}
-function toggleMobileInventory() {
-  if (isMobileMenuMode()) {
-    setMobileView(mobileView === 'inventory' ? (selectedAsset ? 'preview' : 'details') : 'inventory');
-    return;
-  }
-  setMobileInventoryOpen(!document.body.classList.contains('mobile-menu-open'));
-}
-function syncMobileInventoryState() {
-  document.body.classList.remove('mobile-menu-open');
-  if (isMobileMenuMode()) {
-    setMobileView(selectedAsset ? mobileView : 'inventory');
-  } else {
-    document.body.classList.remove('mobile-view-inventory', 'mobile-view-preview', 'mobile-view-details');
-  }
-}
-
-const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', toggleMobileInventory);
-const mobileNavBackdrop = document.getElementById('mobileNavBackdrop');
-if (mobileNavBackdrop) mobileNavBackdrop.addEventListener('click', ()=>setMobileInventoryOpen(false));
-document.querySelectorAll('#mobileBottomDock .mobile-dock-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (btn.dataset.action === 'menu') {
-      showAppPage('menuPage');
-      return;
-    }
-    setMobileView(btn.dataset.view);
-  });
-});
-window.addEventListener('resize', syncMobileInventoryState);
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { setMobileInventoryOpen(false); closeWalletModal(); }
+  if (e.key === 'Escape') closeWalletModal();
 });
-loadCollectionMeta();
 const walletModal = getWalletModal();
 if (walletModal) {
   walletModal.addEventListener('click', event => {
@@ -1984,16 +978,14 @@ const walletModalCloseBtn = document.getElementById('walletModalCloseBtn');
 if (walletModalCloseBtn) walletModalCloseBtn.addEventListener('click', closeWalletModal);
 
 loadCollectionMeta();
-syncMobileInventoryState();
 updateWalletUi();
 restoreWalletSession();
 </script>
 
 <script>
   function syncAppPageBodyClass(pageId) {
-    document.body.classList.remove('page-menu', 'page-inventory', 'page-blend', 'page-merc');
-    if (pageId === 'inventoryPage') document.body.classList.add('page-inventory');
-    else if (pageId === 'blendPage') document.body.classList.add('page-blend');
+    document.body.classList.remove('page-menu', 'page-blend', 'page-merc');
+    if (pageId === 'blendPage') document.body.classList.add('page-blend');
     else if (pageId === 'mercPage') document.body.classList.add('page-merc');
     else document.body.classList.add('page-menu');
   }
@@ -2001,7 +993,6 @@ restoreWalletSession();
   // APRÈS
 const PAGE_HASH_MAP = {
   menuPage:      '',
-  inventoryPage: 'inventory',
   blendPage:     'blendOrganizer',
   mercPage:      'manageMerc',
 };
@@ -2022,20 +1013,8 @@ function showAppPage(pageId) {
   if (!hash || currentHash !== pageHash) {
     history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);
   }
-
-  if (pageId === 'inventoryPage') {
-    if (typeof syncMobileInventoryState === 'function') {
-      requestAnimationFrame(() => syncMobileInventoryState());
-    }
-    if (!allAssets.length) {
-      requestAnimationFrame(() => loadInventory());
-    }
-  }
 }
 
-  function openInventoryPage() {
-    showAppPage('inventoryPage');
-  }
 
   function syncMercCollectionBanner(collection) {
     const banner = document.getElementById('mercCollectionBanner');
@@ -2096,7 +1075,7 @@ function showAppPage(pageId) {
         return;
       }
     } catch (error) {
-      console.warn('Menu collection sync failed via inventory helpers.', error);
+      console.warn('Menu collection sync failed via shared helpers.', error);
     }
 
     try {
@@ -2145,14 +1124,6 @@ window._deepLinkIntent = null;
     window._deepLinkIntent = { page: 'blend', id: extraId, view: 'recipe' };
     requestAnimationFrame(() => {
       if (typeof blendSetMobileView === 'function') blendSetMobileView('recipe');
-    });
-  }
-
-  // Inventory : si un template est spécifié → intent + onglet preview sur mobile
-  if (targetPage === 'inventoryPage' && subView === 'template' && extraId) {
-    window._deepLinkIntent = { page: 'inventory', type: 'template', id: extraId };
-    requestAnimationFrame(() => {
-      if (typeof setMobileView === 'function') setMobileView('preview');
     });
   }
 })();
@@ -3766,9 +2737,9 @@ window._deepLinkIntent = null;
     } catch (_) {}
   }
 
-  async function blendEnsureWalletInventory() {
+  async function blendEnsureWalletAssets() {
     if (getActiveWallet() && !ownedAssets.length) {
-      await loadInventory();
+      await loadWalletAssets();
     }
   }
 
@@ -6007,7 +4978,7 @@ window._deepLinkIntent = null;
       // ── 2. PARALLÉLISATION : fetch par IDs + reload inventaire en même temps
       const [traceAssets] = await Promise.all([
         blendFetchAssetsByIds(traceIds),
-        loadInventory()
+        loadWalletAssets()
       ]);
 
       const ownedTraceAssets = traceIds.length
@@ -6051,8 +5022,6 @@ window._deepLinkIntent = null;
       });
       if (added) {
         ownedAssets = [...ownedById.values()];
-        allAssets = buildDisplayAssets(ownedAssets, collectionTemplates);
-        rebuildSchemaCounts(allAssets);
       }
     }
 
@@ -6593,7 +5562,7 @@ window._deepLinkIntent = null;
     }
     await blendLoadRows();
     if (getActiveWallet() && !ownedAssets.length) {
-      await blendEnsureWalletInventory();
+      await blendEnsureWalletAssets();
       blendApplyFilters();
       if (selectedBlend) blendRenderSelected();
     }
