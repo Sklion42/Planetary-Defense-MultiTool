@@ -932,9 +932,20 @@ async function syncWalletData() {
 function formatSchemaName(s) {
   return s.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
+// Les données on-chain sont saisies à la main et contiennent parfois des espaces
+// parasites (ex : type " Hotel"). On les nettoie pour l'affichage et pour toutes
+// les comparaisons faites par le site lui-même. Les données brutes ne sont jamais
+// réécrites. Exception volontaire : la détection des ingrédients blend.nefty par
+// attribut reste stricte, car le contrat compare les valeurs à l'identique.
+function cleanAttrText(value) {
+  return String(value ?? '').trim().replace(/\s+/g, ' ');
+}
+function normalizeAttrValue(value) {
+  return cleanAttrText(value).toLowerCase();
+}
 const RARITY_ORDER = {mythic:0,legendary:1,epic:2,rare:3,uncommon:4,common:5,'':6};
-function getRarity(a) { const d={...a.data,...a.template?.immutable_data}; return (d.rarity||d.Rarity||'').toLowerCase(); }
-function getName(a) { const d={...a.template?.immutable_data,...a.data}; return d.name||d.Name||a.name||`#${a.asset_id}`; }
+function getRarity(a) { const d={...a.data,...a.template?.immutable_data}; return normalizeAttrValue(d.rarity||d.Rarity||''); }
+function getName(a) { const d={...a.template?.immutable_data,...a.data}; return cleanAttrText(d.name||d.Name||a.name) || `#${a.asset_id}`; }
 function getStarInfo(data = {}) {
   const raw = data.stars ?? data.star ?? data.Stars ?? data.Star ?? data.rarity_stars ?? '';
   if (raw === undefined || raw === null) return { count: 0, raw: '' };
@@ -2165,7 +2176,7 @@ window._deepLinkIntent = null;
   }
 
   function blendTemplateName(template) {
-    return template?.immutable_data?.name || template?.name || `Template #${template?.template_id || '?'}`;
+    return cleanAttrText(template?.immutable_data?.name || template?.name) || `Template #${template?.template_id || '?'}`;
   }
 
   function blendTemplateImage(template) {
@@ -2175,7 +2186,7 @@ window._deepLinkIntent = null;
 
   function blendTemplateRarity(template) {
     const data = template?.immutable_data || {};
-    return String(data.rarity || data.Rarity || '').trim().toLowerCase();
+    return normalizeAttrValue(data.rarity || data.Rarity || '');
   }
 
   function blendTemplateSchema(template) {
@@ -2184,7 +2195,7 @@ window._deepLinkIntent = null;
 
   function blendTemplateType(template) {
     const data = template?.immutable_data || {};
-    return String(data.type || data.Type || data.unit_type || data.UnitType || data.class || data.Class || '').trim();
+    return cleanAttrText(data.type || data.Type || data.unit_type || data.UnitType || data.class || data.Class || '');
   }
 
   function blendAssetMint(asset) {
@@ -2563,7 +2574,7 @@ window._deepLinkIntent = null;
   }
 
   function ascendingTemplateBaseName(template) {
-    const raw = String(ascendingTemplateData(template).name || template?.name || '').trim();
+    const raw = cleanAttrText(ascendingTemplateData(template).name || template?.name || '');
     return raw
       .replace(/⭐+/g, '')
       .replace(/\s+\d+\s*stars?$/i, '')
@@ -2578,8 +2589,8 @@ window._deepLinkIntent = null;
     return [
       String(template?.schema?.schema_name || template?.schema_name || '').trim().toLowerCase(),
       ascendingTemplateBaseName(template),
-      String(data.rarity || data.Rarity || '').trim().toLowerCase(),
-      String(data.type || data.Type || data.unit_type || data.UnitType || data.class || data.Class || '').trim().toLowerCase(),
+      normalizeAttrValue(data.rarity || data.Rarity || ''),
+      normalizeAttrValue(data.type || data.Type || data.unit_type || data.UnitType || data.class || data.Class || ''),
       Number(stars || 0)
     ].join('::');
   }
@@ -3364,12 +3375,12 @@ window._deepLinkIntent = null;
 
   function ascendingRarity(asset) {
     const raw = getRarity(asset) || ascendingAssetData(asset).rarity || ascendingAssetData(asset).Rarity || '';
-    return String(raw || '').trim();
+    return cleanAttrText(raw);
   }
 
   function ascendingBurnConfigForAsset(asset) {
-    const rarity = ascendingRarity(asset).toLowerCase();
-    return ascendingConfig.burnConfigs.find(cfg => String(cfg.rarity || '').toLowerCase() === rarity) || null;
+    const rarity = normalizeAttrValue(ascendingRarity(asset));
+    return ascendingConfig.burnConfigs.find(cfg => normalizeAttrValue(cfg.rarity) === rarity) || null;
   }
 
   function ascendingStarCount(asset) {
@@ -3463,10 +3474,10 @@ window._deepLinkIntent = null;
   }
 
   function ascendingStarupCostForAsset(asset) {
-    const rarity = ascendingRarity(asset).toLowerCase();
+    const rarity = normalizeAttrValue(ascendingRarity(asset));
     const stars = ascendingStarCount(asset);
     return ascendingConfig.starupCosts.find(row => (
-      String(row.rarity || '').toLowerCase() === rarity &&
+      normalizeAttrValue(row.rarity) === rarity &&
       Number(row.from_stars || 0) === stars
     )) || null;
   }
@@ -4084,8 +4095,14 @@ window._deepLinkIntent = null;
   }
 
   function blendPickerUniqueRarities(candidates) {
-    return [...new Set(candidates.map(asset => ascendingRarity(asset)).filter(Boolean))]
-      .sort((a, b) => (RARITY_ORDER[String(a).toLowerCase()] ?? 99) - (RARITY_ORDER[String(b).toLowerCase()] ?? 99)
+    const byKey = new Map();
+    candidates.forEach(asset => {
+      const label = ascendingRarity(asset);
+      const key = normalizeAttrValue(label);
+      if (key && !byKey.has(key)) byKey.set(key, label);
+    });
+    return [...byKey.values()]
+      .sort((a, b) => (RARITY_ORDER[normalizeAttrValue(a)] ?? 99) - (RARITY_ORDER[normalizeAttrValue(b)] ?? 99)
         || String(a).localeCompare(String(b)));
   }
 
@@ -4093,12 +4110,12 @@ window._deepLinkIntent = null;
     const filters = blendPickerState.filters || { schema: 'all', rarity: 'all', sort: 'name' };
     const filtered = candidates.filter(asset => {
       if (filters.schema !== 'all' && getAssetSchemaName(asset) !== filters.schema) return false;
-      if (filters.rarity !== 'all' && ascendingRarity(asset) !== filters.rarity) return false;
+      if (filters.rarity !== 'all' && normalizeAttrValue(ascendingRarity(asset)) !== normalizeAttrValue(filters.rarity)) return false;
       return true;
     });
     return [...filtered].sort((a, b) => {
       if (filters.sort === 'rarity') {
-        const diff = (RARITY_ORDER[ascendingRarity(a).toLowerCase()] ?? 99) - (RARITY_ORDER[ascendingRarity(b).toLowerCase()] ?? 99);
+        const diff = (RARITY_ORDER[normalizeAttrValue(ascendingRarity(a))] ?? 99) - (RARITY_ORDER[normalizeAttrValue(ascendingRarity(b))] ?? 99);
         if (diff) return diff;
       }
       if (filters.sort === 'mint-desc') {
@@ -4168,21 +4185,21 @@ window._deepLinkIntent = null;
     const schemaGroups = new Map();
     filtered.forEach(asset => {
       const schema = getAssetSchemaName(asset) || 'unknown';
-      const rarity = ascendingRarity(asset) || 'Unknown';
+      const rarityLabel = ascendingRarity(asset) || 'Unknown';
+      const rarityKey = normalizeAttrValue(rarityLabel);
       if (!schemaGroups.has(schema)) schemaGroups.set(schema, new Map());
       const rarityGroups = schemaGroups.get(schema);
-      if (!rarityGroups.has(rarity)) rarityGroups.set(rarity, []);
-      rarityGroups.get(rarity).push(asset);
+      if (!rarityGroups.has(rarityKey)) rarityGroups.set(rarityKey, { label: rarityLabel, assets: [] });
+      rarityGroups.get(rarityKey).assets.push(asset);
     });
     return [...schemaGroups.entries()]
       .sort(([a], [b]) => formatSchemaName(a).localeCompare(formatSchemaName(b)))
       .map(([schema, rarityGroups]) => {
         const raritySections = [...rarityGroups.entries()]
-          .sort(([a], [b]) => (RARITY_ORDER[String(a).toLowerCase()] ?? 99) - (RARITY_ORDER[String(b).toLowerCase()] ?? 99)
-            || String(a).localeCompare(String(b)))
-          .map(([rarity, assets]) => `
+          .sort(([a], [b]) => (RARITY_ORDER[a] ?? 99) - (RARITY_ORDER[b] ?? 99) || a.localeCompare(b))
+          .map(([, { label, assets }]) => `
             <div class="blend-picker-rarity-group">
-              <div class="blend-picker-rarity-heading">${blendEscape(rarity)} <span>${assets.length}</span></div>
+              <div class="blend-picker-rarity-heading">${blendEscape(label)} <span>${assets.length}</span></div>
               <div class="blend-picker-grid">${assets.map(asset => blendRenderPickerCard(asset, selectedIds)).join('')}</div>
             </div>`)
           .join('');
